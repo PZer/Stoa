@@ -1,0 +1,6157 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhotoReact AI Studio</title>
+  <script src="./vendor/vue.global.prod.js"></script>
+  <style>
+    :root {
+      --text: #f4f8ff;
+      --subtext: #d4dfee;
+      --soft: rgba(255, 255, 255, 0.08);
+      --glass: rgba(18, 28, 41, 0.34);
+      --glass-strong: rgba(15, 23, 34, 0.5);
+      --line: rgba(255, 255, 255, 0.18);
+      --accent: #88b6ff;
+      --accent-soft: rgba(136, 182, 255, 0.23);
+      --warn: #ff8a8a;
+      --ok: #8df3bf;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--text);
+      background: #08111f;
+    }
+
+    body {
+      overflow: hidden;
+    }
+
+    html,
+    body,
+    .app {
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    html::-webkit-scrollbar,
+    body::-webkit-scrollbar,
+    .app::-webkit-scrollbar {
+      width: 0;
+      height: 0;
+      display: none;
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .app {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      overflow-x: hidden;
+      overflow-y: auto;
+      background-position: center;
+      background-size: cover;
+      background-repeat: no-repeat;
+    }
+
+    .bg-overlay {
+      position: fixed;
+      inset: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at 14% 18%, rgba(130, 167, 255, 0.18), transparent 38%),
+        radial-gradient(circle at 86% 12%, rgba(132, 255, 204, 0.16), transparent 40%),
+        radial-gradient(circle at 50% 90%, rgba(127, 150, 255, 0.14), transparent 40%),
+        linear-gradient(160deg, rgba(8, 17, 31, 0.9), rgba(8, 17, 31, 0.7));
+      backdrop-filter: blur(2px);
+    }
+
+    .top-actions {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      gap: 10px;
+      z-index: 20;
+    }
+
+    .action-btn {
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 9px 14px;
+      font-size: 13px;
+      cursor: pointer;
+      backdrop-filter: blur(12px);
+      transition: all 0.2s ease;
+    }
+
+    .action-btn:hover {
+      background: rgba(255, 255, 255, 0.16);
+      border-color: rgba(255, 255, 255, 0.33);
+      transform: translateY(-1px);
+    }
+
+    .main {
+      position: relative;
+      z-index: 10;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .chat-shell {
+      width: min(920px, 100%);
+      border-radius: 28px;
+      border: 1px solid var(--line);
+      background: var(--glass);
+      backdrop-filter: blur(28px) saturate(120%);
+      box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.4);
+      padding: 22px;
+      display: grid;
+      grid-template-rows: auto 1fr auto auto;
+      gap: 14px;
+      max-height: min(86vh, 860px);
+    }
+
+    .title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .title {
+      margin: 0;
+      font-size: 22px;
+      letter-spacing: 0.4px;
+      font-weight: 600;
+    }
+
+    .subtitle {
+      margin: 4px 0 0;
+      font-size: 12px;
+      color: var(--subtext);
+      opacity: 0.88;
+    }
+
+    .keep-style {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 11px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.05);
+      border: 1px solid var(--line);
+      font-size: 12px;
+      color: #333333;
+      white-space: nowrap;
+    }
+
+    .messages {
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(4, 10, 18, 0.4);
+      border-radius: 18px;
+      overflow: auto;
+      padding: 14px;
+      min-height: 260px;
+    }
+
+    .message {
+      margin-bottom: 12px;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 14px;
+      line-height: 1.5;
+      word-break: break-word;
+    }
+
+    .message.user {
+      background: rgba(124, 165, 255, 0.2);
+      border: 1px solid rgba(124, 165, 255, 0.28);
+    }
+
+    .message.assistant {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+    }
+
+    .message.system {
+      background: rgba(141, 243, 191, 0.1);
+      border: 1px solid rgba(141, 243, 191, 0.35);
+      color: #d5ffe9;
+    }
+
+    .message.error {
+      background: rgba(255, 138, 138, 0.12);
+      border: 1px solid rgba(255, 138, 138, 0.34);
+      color: #ffd7d7;
+    }
+
+    .message-media {
+      margin-top: 8px;
+      display: grid;
+      gap: 8px;
+      max-width: 360px;
+    }
+
+    .message-media img {
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      display: block;
+      object-fit: cover;
+      max-height: 280px;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .download-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: fit-content;
+      border: 1px solid rgba(0, 0, 0, 0.04);
+      background: rgba(0, 0, 0, 0.05);
+      color: #333333;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      text-decoration: none;
+      transition: all 0.2s ease;
+    }
+
+    .download-link:hover {
+      background: rgba(0, 0, 0, 0.08);
+      border-color: rgba(0, 0, 0, 0.06);
+      color: #222222;
+    }
+
+    .attachments {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .attachment {
+      position: relative;
+      width: 110px;
+      height: 110px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+    }
+
+    .attachment img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .attachment button {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      border: 0;
+      border-radius: 50%;
+      width: 22px;
+      height: 22px;
+      background: rgba(10, 16, 26, 0.76);
+      color: #fff;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .input-area {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: end;
+    }
+
+    .input-wrapper {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+    }
+
+    textarea {
+      width: 100%;
+      background: transparent;
+      border: none;
+      color: var(--text);
+      padding: 12px;
+      resize: none;
+      min-height: 74px;
+      font-size: 14px;
+      line-height: 1.5;
+      font-family: inherit;
+      outline: none;
+    }
+
+    .send-btn {
+      height: 74px;
+      border-radius: 16px;
+      border: 1px solid rgba(0, 0, 0, 0.04);
+      background: rgba(0, 0, 0, 0.05);
+      color: #333333;
+      min-width: 100px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .send-btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      background: rgba(0, 0, 0, 0.08);
+    }
+
+    .send-btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    .tool-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .left-tools,
+    .right-tools {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .mini-btn {
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .mini-btn:hover:not(:disabled) {
+      background: rgba(255, 255, 255, 0.16);
+    }
+
+    .mini-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .ratio-box {
+      position: relative;
+    }
+
+    .ratio-menu {
+      position: absolute;
+      bottom: calc(100% + 9px);
+      left: 0;
+      width: 130px;
+      padding: 7px;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: var(--glass-strong);
+      backdrop-filter: blur(18px);
+      display: grid;
+      gap: 6px;
+      z-index: 25;
+    }
+
+    .floating-ratio-menu {
+      position: fixed;
+      bottom: auto;
+      left: 0;
+      width: 132px;
+      z-index: 170;
+      border-color: rgba(255, 255, 255, 0.45);
+      background: rgba(255, 255, 255, 0.88);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    }
+
+    .ratio-item {
+      border: 1px solid transparent;
+      background: rgba(0, 0, 0, 0.04);
+      color: #333333;
+      border-radius: 9px;
+      padding: 7px 9px;
+      text-align: left;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .ratio-item:hover {
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    .status {
+      font-size: 12px;
+      color: var(--subtext);
+      min-height: 18px;
+    }
+
+    .status.error {
+      color: #ffd2d2;
+    }
+
+    .status.ok {
+      color: #d5ffe9;
+    }
+
+    .ai-dialog-layer {
+      position: fixed;
+      inset: 0;
+      z-index: 55;
+      pointer-events: auto;
+      background:
+        linear-gradient(120deg, rgba(255, 255, 255, 0.18), transparent 28%, rgba(255, 255, 255, 0.12) 58%, transparent 78%),
+        rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(10px) saturate(0.95);
+      padding: clamp(58px, 7vh, 82px) 24px 28px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+    }
+
+    .ai-dialog-layer::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(96deg, transparent 4%, rgba(255, 255, 255, 0.13) 13%, transparent 28%, rgba(205, 226, 255, 0.08) 50%, transparent 70%),
+        linear-gradient(rgba(255, 255, 255, 0.026) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.018) 1px, transparent 1px);
+      background-size: 100% 100%, 74px 74px, 74px 74px;
+      opacity: 0.72;
+    }
+
+    .ai-dialog {
+      position: relative;
+      z-index: 1;
+      width: min(980px, calc(100vw - 44px));
+      height: min(76vh, 720px);
+      max-height: calc(100vh - 96px);
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 26px;
+      background:
+        radial-gradient(circle at 82% 18%, rgba(255, 255, 255, 0.28), transparent 34%),
+        radial-gradient(circle at 16% 8%, rgba(255, 255, 255, 0.22), transparent 30%),
+        rgba(255, 255, 255, 0.75);
+      backdrop-filter: blur(30px) saturate(1.28);
+      color: #333333;
+      box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.4);
+      pointer-events: auto;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      animation: ai-dialog-in 0.22s ease both;
+    }
+
+    .ai-dialog::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(126deg, rgba(255, 255, 255, 0.2), transparent 28%),
+        linear-gradient(305deg, rgba(160, 218, 255, 0.12), transparent 36%);
+      opacity: 0.7;
+      mix-blend-mode: screen;
+    }
+
+    .ai-dialog-head {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 18px 20px 15px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.4);
+    }
+
+    .ai-dialog-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .ai-dialog-orb {
+      width: 14px;
+      height: 14px;
+      border-radius: 999px;
+      background: var(--ok);
+      box-shadow: 0 0 18px rgba(141, 243, 191, 0.72);
+      flex: 0 0 auto;
+    }
+
+    .ai-dialog-orb.active {
+      background: var(--accent);
+      box-shadow: 0 0 22px rgba(136, 182, 255, 0.82);
+      animation: ai-dialog-pulse 1.1s ease-in-out infinite;
+    }
+
+    .ai-dialog-kicker {
+      margin: 0 0 2px;
+      color: #8e8e93;
+      font-size: 11px;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    .ai-dialog-heading {
+      margin: 0;
+      color: #333333;
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .ai-dialog-close {
+      border: 1px solid rgba(0, 0, 0, 0.04);
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.05);
+      color: #333333;
+      padding: 8px 13px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      flex: 0 0 auto;
+    }
+
+    .ai-dialog-close:hover:not(:disabled) {
+      background: rgba(0, 0, 0, 0.08);
+      color: #222222;
+    }
+
+    .ai-dialog-close:disabled {
+      cursor: not-allowed;
+      opacity: 0.48;
+    }
+
+    .ai-dialog-body {
+      position: relative;
+      z-index: 1;
+      min-height: 0;
+      max-height: none;
+      overflow: auto;
+      padding: 20px;
+      scroll-behavior: smooth;
+    }
+
+    .ai-dialog .ai-dialog-messages {
+      min-height: 100%;
+      max-height: none;
+      border: 0;
+      background: transparent;
+      padding: 0;
+      overflow: visible;
+      display: grid;
+      align-content: start;
+      gap: 12px;
+    }
+
+    .ai-dialog .ai-dialog-messages .message {
+      width: fit-content;
+      max-width: min(720px, 92%);
+      margin: 0;
+      border-color: rgba(255, 255, 255, 0.35);
+      border-radius: 16px 16px 16px 6px;
+      background: rgba(255, 255, 255, 0.48);
+      color: #555555;
+      padding: 11px 13px;
+      box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    }
+
+    .ai-dialog .ai-dialog-messages .message.error {
+      border-color: rgba(255, 138, 138, 0.34);
+      background: rgba(255, 138, 138, 0.12);
+      color: #ffd7d7;
+    }
+
+    .ai-dialog .ai-dialog-messages .message.user {
+      justify-self: end;
+      border-radius: 16px 16px 6px 16px;
+      border-color: rgba(255, 255, 255, 0.45);
+      background: rgba(255, 255, 255, 0.62);
+      color: #333333;
+    }
+
+    .ai-dialog .ai-dialog-messages .message.system {
+      border-color: rgba(141, 243, 191, 0.26);
+      background:
+        linear-gradient(135deg, rgba(141, 243, 191, 0.13), rgba(255, 255, 255, 0.055)),
+        rgba(141, 243, 191, 0.07);
+    }
+
+    .ai-dialog .ai-dialog-messages .messages-empty,
+    .ai-dialog .ai-dialog-messages .output-time {
+      color: #8e8e93;
+    }
+
+    .ai-dialog-result {
+      width: min(720px, 100%);
+      margin: 4px 0 0;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.58);
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+      box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    }
+
+    .ai-dialog-result img {
+      width: 100%;
+      max-height: 420px;
+      display: block;
+      object-fit: contain;
+      border-radius: 14px;
+      background: rgba(0, 0, 0, 0.22);
+    }
+
+    .ai-dialog-result-actions {
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    @keyframes ai-dialog-in {
+      from {
+        opacity: 0;
+        transform: translateY(-12px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    @keyframes ai-dialog-pulse {
+      0%,
+      100% {
+        opacity: 0.62;
+        transform: scale(0.9);
+      }
+      50% {
+        opacity: 1;
+        transform: scale(1.16);
+      }
+    }
+
+    .app.ai-dialog-active .prompt-gallery-strip,
+    .app.ai-dialog-active .chat-shell {
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .app.ai-dialog-active .prompt-card:hover,
+    .app.ai-dialog-active .prompt-card:focus-visible {
+      transform: none;
+      border-color: rgba(255, 255, 255, 0.18);
+      box-shadow:
+        0 16px 36px rgba(70, 108, 150, 0.18),
+        0 1px 0 rgba(255, 255, 255, 0.34),
+        inset 0 1px 0 rgba(255, 255, 255, 0.48),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.18);
+    }
+
+    .field {
+      margin-bottom: 10px;
+    }
+
+    .field label {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 12px;
+      color: var(--subtext);
+    }
+
+    .field input,
+    .field select {
+      width: 100%;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.08);
+      padding: 8px 10px;
+      color: var(--text);
+      font-size: 13px;
+      outline: none;
+    }
+
+    select {
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      font-size: 12px;
+      padding: 6px 8px;
+    }
+
+    .hint {
+      font-size: 11px;
+      color: var(--subtext);
+      opacity: 0.82;
+    }
+
+    /* Home Redesign (reference style) */
+    html,
+    body {
+      font-family: "Avenir Next", "SF Pro Display", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: #eff0f3;
+      color: #1f2530;
+    }
+
+    body {
+      overflow: auto;
+    }
+
+    .app {
+      min-height: 100vh;
+      height: auto;
+      background: #eff0f3;
+    }
+
+    .bg-overlay {
+      background:
+        radial-gradient(circle at 16% 0%, rgba(126, 174, 255, 0.12), transparent 36%),
+        radial-gradient(circle at 87% 8%, rgba(62, 197, 255, 0.1), transparent 42%),
+        linear-gradient(180deg, rgba(245, 247, 250, 0.95), rgba(239, 240, 243, 0.97));
+      backdrop-filter: blur(0);
+    }
+
+    .top-actions {
+      top: 16px;
+      right: 24px;
+      gap: 8px;
+      z-index: 25;
+    }
+
+    .action-btn {
+      border: 1px solid #d9dde5;
+      background: rgba(255, 255, 255, 0.88);
+      color: #394352;
+      font-weight: 500;
+      backdrop-filter: none;
+      box-shadow: 0 4px 14px rgba(22, 28, 38, 0.08);
+    }
+
+    .action-btn:hover {
+      background: #fff;
+      border-color: #cfd4de;
+      transform: translateY(-1px);
+    }
+
+    .main {
+      display: grid;
+      grid-template-columns: 92px minmax(820px, 1320px);
+      justify-content: center;
+      align-items: start;
+      gap: 22px;
+      min-height: 100vh;
+      padding: 22px 18px 34px;
+    }
+
+    .left-rail {
+      position: sticky;
+      top: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      height: fit-content;
+      padding-top: 4px;
+      z-index: 11;
+    }
+
+    .rail-logo {
+      width: 40px;
+      height: 40px;
+      display: grid;
+      place-items: center;
+      color: #36b7e7;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .rail-item {
+      width: 72px;
+      border: 0;
+      border-radius: 12px;
+      padding: 10px 6px;
+      background: transparent;
+      color: #555f6e;
+      font-size: 13px;
+      cursor: default;
+      pointer-events: none;
+      transition: all 0.2s ease;
+      text-align: center;
+    }
+
+    .rail-item:hover {
+      background: transparent;
+      color: #555f6e;
+    }
+
+    .rail-item.active {
+      background: rgba(255, 255, 255, 0.96);
+      color: #171c24;
+      box-shadow: 0 8px 18px rgba(34, 40, 51, 0.08);
+    }
+
+    .main-board {
+      position: relative;
+      z-index: 10;
+      display: grid;
+      gap: 14px;
+      padding-top: 18px;
+    }
+
+    .hero-headline {
+      text-align: center;
+      font-size: 44px;
+      font-weight: 700;
+      letter-spacing: -0.6px;
+      color: #131922;
+      margin: 8px 0 10px;
+    }
+
+    .hero-headline span {
+      color: #11a9d1;
+    }
+
+    .chat-shell {
+      width: 100%;
+      border-radius: 20px;
+      border: 1px solid #dfe3ea;
+      background: rgba(255, 255, 255, 0.82);
+      box-shadow: 0 16px 38px rgba(26, 34, 45, 0.08);
+      backdrop-filter: blur(6px);
+      padding: 16px;
+      display: grid;
+      grid-template-rows: auto auto auto auto;
+      gap: 10px;
+      max-height: none;
+    }
+
+    .title-row {
+      padding: 2px 4px 4px;
+    }
+
+    .title {
+      font-size: 28px;
+      font-weight: 700;
+      color: #1a2330;
+    }
+
+    .subtitle {
+      color: #7a8493;
+      font-size: 13px;
+    }
+
+    .keep-style {
+      border: 1px solid #d6dde8;
+      background: rgba(255, 255, 255, 0.92);
+      color: #5c6776;
+    }
+
+    .input-area {
+      grid-template-columns: 1fr 58px;
+      gap: 12px;
+      align-items: stretch;
+    }
+
+    .input-wrapper {
+      border: 1px solid #dce1e8;
+      border-radius: 16px;
+      background: #ffffff;
+    }
+
+    textarea {
+      color: #1f2530;
+      min-height: 104px;
+      font-size: 15px;
+    }
+
+    .send-btn {
+      min-width: 58px;
+      height: auto;
+      border-radius: 14px;
+      border: 1px solid #d5dbe6;
+      background: #f3f5f8;
+      color: #6d7684;
+      font-size: 13px;
+    }
+
+    .send-btn:hover:not(:disabled) {
+      background: #ebeff5;
+    }
+
+    .mini-btn {
+      border: 1px solid #d8dde6;
+      background: #ffffff;
+      color: #444f5f;
+      border-radius: 11px;
+      padding: 7px 11px;
+      font-size: 12px;
+    }
+
+    .mini-btn:hover:not(:disabled) {
+      background: #f8f9fb;
+    }
+
+    .tool-row {
+      border-top: 1px solid #eceff4;
+      padding-top: 10px;
+    }
+
+    .hint {
+      color: #7b8594;
+      opacity: 1;
+    }
+
+    .status {
+      color: #7f8896;
+      min-height: 18px;
+      padding-left: 2px;
+    }
+
+    .attachments {
+      padding-top: 4px;
+    }
+
+    .attachment {
+      border: 1px solid #dbe0e8;
+      background: #f7f9fb;
+    }
+
+    .ability-row {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .ability-card {
+      border: 1px solid #dde2ea;
+      border-radius: 15px;
+      background: rgba(255, 255, 255, 0.88);
+      padding: 12px 14px;
+      display: grid;
+      gap: 4px;
+      box-shadow: 0 8px 20px rgba(30, 35, 47, 0.05);
+    }
+
+    .ability-card strong {
+      color: #1d2735;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .ability-card span {
+      color: #7d8796;
+      font-size: 12px;
+    }
+
+    .ability-card.active {
+      border-color: #cfe8ef;
+      background: linear-gradient(160deg, #ffffff, #f2fbff);
+    }
+
+    .gallery-panel {
+      border: 1px solid #dde2ea;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.86);
+      padding: 12px;
+      box-shadow: 0 10px 26px rgba(29, 34, 44, 0.05);
+      min-height: 410px;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      gap: 12px;
+    }
+
+    .gallery-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .gallery-chip {
+      border: 1px solid #d8dde6;
+      background: #ffffff;
+      color: #5c6675;
+      border-radius: 10px;
+      padding: 7px 11px;
+      font-size: 12px;
+      line-height: 1;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .gallery-chip.active {
+      background: #f3f6fa;
+      color: #2a3342;
+      border-color: #d0d7e3;
+    }
+
+    .gallery-search {
+      margin-left: 4px;
+      min-width: 260px;
+      border: 1px solid #d9dee7;
+      border-radius: 10px;
+      background: #fff;
+      color: #6a7482;
+      padding: 8px 12px;
+      font-size: 13px;
+    }
+
+    .gallery-placeholder {
+      border: 1px dashed #cfd6e1;
+      border-radius: 14px;
+      background:
+        linear-gradient(0deg, rgba(248, 250, 253, 0.86), rgba(248, 250, 253, 0.86)),
+        repeating-linear-gradient(
+          45deg,
+          rgba(195, 206, 221, 0.12),
+          rgba(195, 206, 221, 0.12) 14px,
+          rgba(255, 255, 255, 0.2) 14px,
+          rgba(255, 255, 255, 0.2) 28px
+        );
+      min-height: 330px;
+      display: grid;
+      place-items: center;
+    }
+
+    .placeholder-note {
+      color: #8b95a3;
+      font-size: 14px;
+      letter-spacing: 0.2px;
+    }
+
+    .messages {
+      border: 1px solid #dfe3ea;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 14px;
+      min-height: 96px;
+      max-height: 180px;
+      padding: 10px;
+    }
+
+    .messages-empty {
+      color: #8b95a3;
+      font-size: 13px;
+      padding: 4px 2px;
+    }
+
+    .message.assistant,
+    .message.user,
+    .message.system,
+    .message.error {
+      color: #2a3342;
+      border-color: #dce2eb;
+      background: #f8fafd;
+    }
+
+    /* PS4 Target Layout */
+    .main {
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 42px 24px 24px;
+      min-height: 100vh;
+    }
+
+    .main-board {
+      width: min(1320px, 100%);
+      display: grid;
+      gap: 16px;
+    }
+
+    .hero-headline {
+      margin: 0;
+      text-align: center;
+      font-size: clamp(38px, 4.2vw, 68px);
+      font-weight: 800;
+      letter-spacing: -0.8px;
+      color: #111827;
+    }
+
+    .hero-headline span {
+      color: #1ca7d7;
+    }
+
+    .chat-shell {
+      width: 100%;
+      border-radius: 24px;
+      border: 1px solid #d7dde7;
+      background: rgba(245, 246, 249, 0.92);
+      box-shadow: none;
+      backdrop-filter: none;
+      padding: 16px 16px 10px;
+      gap: 10px;
+    }
+
+    .title-row {
+      padding: 0 4px 6px;
+      border-bottom: 1px solid #dfe4ed;
+    }
+
+    .title {
+      margin: 0;
+      font-size: 50px;
+      line-height: 1.05;
+      letter-spacing: -0.8px;
+      color: #1e2633;
+    }
+
+    .subtitle {
+      margin-top: 8px;
+      font-size: 28px;
+      color: #8e97a5;
+    }
+
+    .keep-style {
+      border-radius: 999px;
+      border: 1px solid #cbd3df;
+      background: #f6f8fb;
+      color: #667181;
+      padding: 9px 14px;
+      font-size: 12px;
+    }
+
+    .input-area {
+      grid-template-columns: 1fr 66px;
+      align-items: stretch;
+      gap: 12px;
+    }
+
+    .input-wrapper {
+      border: 1px solid #cfd6e1;
+      border-radius: 16px;
+      background: #f5f7fa;
+    }
+
+    textarea {
+      min-height: 160px;
+      font-size: 31px;
+      line-height: 1.4;
+      color: #636f7f;
+      padding: 18px 20px;
+    }
+
+    .send-btn {
+      min-width: 66px;
+      border-radius: 16px;
+      border: 1px solid #cbd2de;
+      background: #e9edf3;
+      color: #6a7381;
+      font-size: 24px;
+      height: auto;
+    }
+
+    .result-panel {
+      border: 1px solid #d8deea;
+      border-radius: 16px;
+      background: #f7f9fc;
+      min-height: 260px;
+      padding: 12px;
+      display: grid;
+      gap: 10px;
+      align-content: start;
+    }
+
+    .result-panel.loading {
+      border-color: #88b6ff;
+      box-shadow: 0 0 0 3px rgba(136, 182, 255, 0.22);
+      background: #eef4ff;
+    }
+
+    .result-loading {
+      min-height: 234px;
+      display: grid;
+      place-items: center;
+      gap: 12px;
+      align-content: center;
+      text-align: center;
+    }
+
+    .result-spinner {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      border: 5px solid #c9d8ef;
+      border-top-color: #4f8fff;
+      animation: result-spin 0.9s linear infinite;
+    }
+
+    .result-loading-text {
+      color: #4b5b73;
+      font-size: 15px;
+      font-weight: 600;
+    }
+
+    .result-image {
+      width: 100%;
+      max-height: min(52vh, 560px);
+      object-fit: contain;
+      border-radius: 12px;
+      border: 1px solid #d1d8e5;
+      background: #ffffff;
+      display: block;
+    }
+
+    .result-download {
+      justify-self: start;
+      border-color: #a8c2f4;
+      background: #eaf1ff;
+      color: #2d4f82;
+      font-size: 13px;
+      padding: 7px 12px;
+    }
+
+    .result-empty {
+      min-height: 234px;
+      display: grid;
+      place-items: center;
+      color: #8f99a8;
+      font-size: 14px;
+    }
+
+    @keyframes result-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .tool-row {
+      border-top: 1px solid #dfe4ed;
+      padding-top: 10px;
+      margin-top: -2px;
+    }
+
+    .mini-btn {
+      border: 1px solid #cfd6e1;
+      border-radius: 999px;
+      background: #f3f6fb;
+      color: #647082;
+      font-size: 12px;
+      padding: 7px 14px;
+    }
+
+    .right-tools {
+      margin-left: auto;
+    }
+
+    .hint {
+      color: #7f8998;
+      font-size: 13px;
+    }
+
+    .status {
+      color: #b7f6d6;
+      font-size: 14px;
+      margin-top: -2px;
+      padding-left: 4px;
+    }
+
+    .output-messages {
+      margin-top: 8px;
+      min-height: 84px;
+      max-height: 180px;
+      overflow: auto;
+    }
+
+    .output-messages .message {
+      margin-bottom: 8px;
+      padding: 8px 10px;
+      font-size: 12px;
+      line-height: 1.45;
+      background: #f7f9fc;
+      border: 1px solid #d9e0ec;
+      color: #425066;
+    }
+
+    .output-messages .message.error {
+      background: #fff2f2;
+      border-color: #f0c5c5;
+      color: #8d3b3b;
+    }
+
+    .output-messages .message:last-child {
+      margin-bottom: 0;
+    }
+
+    .output-time {
+      display: inline-block;
+      margin-right: 8px;
+      color: #7c8798;
+      font-size: 11px;
+    }
+
+    .prompt-gallery-strip {
+      width: 100%;
+      border: 1px solid #d7dde7;
+      border-radius: 22px;
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(239, 244, 252, 0.84)),
+        rgba(245, 246, 249, 0.92);
+      overflow: hidden;
+      box-shadow: 0 16px 36px rgba(26, 34, 45, 0.08);
+    }
+
+    .prompt-gallery-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 14px 16px 10px;
+      border-bottom: 1px solid #e1e6ef;
+    }
+
+    .prompt-gallery-kicker {
+      margin: 0 0 4px;
+      color: #1ca7d7;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .prompt-gallery-title {
+      margin: 0;
+      color: #1e2633;
+      font-size: 18px;
+      line-height: 1.2;
+    }
+
+    .prompt-gallery-count {
+      color: #7a8493;
+      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .prompt-gallery-marquee {
+      position: relative;
+      overflow-x: auto;
+      overflow-y: hidden;
+      padding: 14px 0 16px;
+      overscroll-behavior-inline: contain;
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+
+    .prompt-gallery-marquee::-webkit-scrollbar {
+      display: none;
+    }
+
+    .prompt-gallery-marquee::before,
+    .prompt-gallery-marquee::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      z-index: 2;
+      width: 88px;
+      pointer-events: none;
+    }
+
+    .prompt-gallery-marquee::before {
+      left: 0;
+      background: linear-gradient(90deg, rgba(245, 246, 249, 0.96), transparent);
+    }
+
+    .prompt-gallery-marquee::after {
+      right: 0;
+      background: linear-gradient(270deg, rgba(245, 246, 249, 0.96), transparent);
+    }
+
+    .prompt-gallery-track {
+      display: flex;
+      gap: 14px;
+      width: max-content;
+      padding-inline: 16px;
+    }
+
+    .prompt-card {
+      position: relative;
+      flex: 0 0 164px;
+      width: 164px;
+      height: 204px;
+      border: 1px solid rgba(168, 182, 203, 0.72);
+      border-radius: 16px;
+      padding: 0;
+      overflow: hidden;
+      background: #eef2f7;
+      color: inherit;
+      cursor: pointer;
+      box-shadow: 0 12px 28px rgba(26, 34, 45, 0.1);
+      transition:
+        transform 180ms ease,
+        border-color 180ms ease,
+        box-shadow 180ms ease;
+    }
+
+    .prompt-card:hover,
+    .prompt-card:focus-visible {
+      transform: translateY(-4px);
+      border-color: #73b9d4;
+      box-shadow: 0 18px 36px rgba(26, 34, 45, 0.18);
+      outline: none;
+    }
+
+    .prompt-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .prompt-card-body {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      display: grid;
+      gap: 3px;
+      padding: 34px 10px 10px;
+      text-align: left;
+      background: linear-gradient(to top, rgba(10, 16, 26, 0.82), rgba(10, 16, 26, 0));
+    }
+
+    .prompt-card-title,
+    .prompt-card-meta {
+      margin: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .prompt-card-title {
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .prompt-card-meta {
+      color: rgba(255, 255, 255, 0.76);
+      font-size: 11px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .prompt-gallery-track {
+        transform: none;
+      }
+    }
+
+    .attachments {
+      margin-top: 2px;
+    }
+
+    /* Sora-inspired shell */
+    body {
+      background:
+        url("./prompt-gallery/base-layer-bg-3.jpg") center / cover fixed no-repeat,
+        #d8cfbd;
+    }
+
+    .app {
+      background-color: transparent;
+      background-image: none;
+      background-position: center;
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+    }
+
+    .bg-overlay {
+      inset: -24px;
+      width: auto;
+      height: auto;
+      background: transparent;
+      backdrop-filter: none;
+      overflow: hidden;
+    }
+
+    .bg-overlay::before,
+    .bg-overlay::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .bg-overlay::before {
+      background: url("./prompt-gallery/base-layer-bg-3.jpg") center / cover fixed no-repeat;
+      filter: blur(14px);
+      transform: scale(1.04);
+      transform-origin: center;
+    }
+
+    .bg-overlay::after {
+      display: none;
+    }
+
+    .top-actions {
+      top: 18px;
+      right: 22px;
+    }
+
+    .action-btn {
+      border-color: rgba(255, 255, 255, 0.4);
+      background: rgba(255, 255, 255, 0.75);
+      color: #333333;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+    }
+
+    .main {
+      display: block;
+      min-height: 100vh;
+      padding: 0 0 330px;
+    }
+
+    .main-board {
+      width: 100%;
+      margin: 0 auto;
+      display: grid;
+      gap: 0;
+    }
+
+    .sora-topbar {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 0 2px 4px;
+    }
+
+    .sora-eyebrow {
+      margin: 0 0 8px;
+      color: rgba(255, 255, 255, 0.46);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+
+    .sora-subtitle {
+      max-width: 420px;
+      margin: 0;
+      color: rgba(255, 255, 255, 0.52);
+      font-size: 13px;
+      line-height: 1.6;
+      text-align: right;
+    }
+
+    .hero-headline {
+      margin: 0;
+      color: rgba(255, 255, 255, 0.94);
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: 0;
+      text-align: left;
+    }
+
+    .result-stage {
+      min-height: 0;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 18px;
+      background: rgba(15, 17, 20, 0.82);
+      box-shadow: 0 18px 58px rgba(0, 0, 0, 0.34);
+      overflow: hidden;
+    }
+
+    .result-stage .result-image {
+      width: 100%;
+      max-height: 62vh;
+      border: 0;
+      border-radius: 14px;
+      background: #0c0c0c;
+    }
+
+    .result-stage .result-download {
+      margin: 0 0 10px 10px;
+      border-color: rgba(255, 255, 255, 0.16);
+      background: rgba(255, 255, 255, 0.08);
+      color: rgba(255, 255, 255, 0.86);
+    }
+
+    .prompt-gallery-strip {
+      min-height: 100vh;
+      position: relative;
+      box-sizing: border-box;
+      padding: clamp(92px, 10vh, 120px) clamp(46px, 8vw, 150px) 380px;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+      overflow: visible;
+      isolation: isolate;
+    }
+
+    .prompt-gallery-strip::before {
+      content: "";
+      position: absolute;
+      inset: -44px -26px -48px;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(96deg, transparent 4%, rgba(255, 255, 255, 0.2) 11%, transparent 22%, rgba(186, 220, 255, 0.1) 48%, transparent 64%),
+        radial-gradient(circle at 18% 16%, rgba(190, 226, 255, 0.24), transparent 34%),
+        radial-gradient(circle at 83% 14%, rgba(143, 255, 214, 0.17), transparent 32%),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0));
+      filter: blur(4px);
+      opacity: 0.96;
+    }
+
+    .prompt-gallery-strip::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.026) 1px, transparent 1px);
+      background-size: 72px 72px;
+      opacity: 0.42;
+      mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.88), transparent 92%);
+    }
+
+    .prompt-gallery-strip::before,
+    .prompt-gallery-strip::after {
+      display: none;
+    }
+
+    .prompt-gallery-head {
+      display: none;
+    }
+
+    .prompt-gallery-kicker {
+      color: rgba(255, 255, 255, 0.44);
+    }
+
+    .prompt-gallery-title {
+      color: rgba(255, 255, 255, 0.94);
+      font-size: 18px;
+    }
+
+    .prompt-gallery-count {
+      color: rgba(255, 255, 255, 0.48);
+    }
+
+    .prompt-gallery-marquee {
+      position: relative;
+      z-index: 1;
+      min-height: calc(100vh - 150px);
+      overflow: visible;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+      backdrop-filter: none;
+    }
+
+    .prompt-gallery-marquee::before,
+    .prompt-gallery-marquee::after {
+      display: none;
+    }
+
+    .prompt-gallery-track {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      grid-auto-flow: dense;
+      grid-auto-rows: 92px;
+      gap: 16px;
+      width: 100%;
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0;
+      position: relative;
+      z-index: 1;
+      align-content: start;
+      animation: none;
+    }
+
+    .prompt-card {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      aspect-ratio: auto;
+      flex: none;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 16px;
+      background:
+        linear-gradient(150deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.16) 42%, rgba(255, 255, 255, 0.08)),
+        rgba(220, 237, 255, 0.28);
+      box-shadow:
+        0 16px 36px rgba(70, 108, 150, 0.18),
+        0 1px 0 rgba(255, 255, 255, 0.34),
+        inset 0 1px 0 rgba(255, 255, 255, 0.48),
+        inset 0 -1px 0 rgba(255, 255, 255, 0.18);
+      backdrop-filter: none;
+      overflow: hidden;
+    }
+
+    .prompt-card::before,
+    .prompt-card::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      border-radius: inherit;
+    }
+
+    .prompt-card::before {
+      z-index: 2;
+      background:
+        linear-gradient(128deg, rgba(255, 255, 255, 0.52), rgba(255, 255, 255, 0.13) 17%, transparent 35%),
+        linear-gradient(310deg, rgba(168, 226, 255, 0.24), transparent 42%),
+        linear-gradient(88deg, transparent 0 34%, rgba(255, 255, 255, 0.16) 45%, transparent 56%),
+        radial-gradient(circle at 22% 10%, rgba(255, 255, 255, 0.2), transparent 32%);
+      opacity: 0.72;
+      mix-blend-mode: screen;
+    }
+
+    .prompt-card::after {
+      z-index: 3;
+      inset: auto 9px 9px;
+      height: 44%;
+      border-radius: 12px;
+      background:
+        linear-gradient(to top, rgba(24, 44, 72, 0.42), rgba(255, 255, 255, 0.08) 72%, transparent),
+        linear-gradient(135deg, rgba(255, 255, 255, 0.18), transparent 42%);
+      opacity: 0.38;
+      transition: opacity 170ms ease;
+    }
+
+    .prompt-card.layout-feature {
+      grid-column: span 2;
+      grid-row: span 4;
+    }
+
+    .prompt-card.layout-wide {
+      grid-column: span 2;
+      grid-row: span 2;
+    }
+
+    .prompt-card.layout-landscape {
+      grid-column: span 1;
+      grid-row: span 2;
+    }
+
+    .prompt-card.layout-square {
+      grid-column: span 1;
+      grid-row: span 3;
+    }
+
+    .prompt-card.layout-portrait {
+      grid-column: span 1;
+      grid-row: span 4;
+    }
+
+    .prompt-card.layout-tall {
+      grid-column: span 1;
+      grid-row: span 5;
+    }
+
+    .prompt-card:hover,
+    .prompt-card:focus-visible {
+      z-index: 3;
+      transform: translateY(-2px) scale(1.015);
+      border-color: rgba(255, 255, 255, 0.45);
+      box-shadow:
+        0 18px 42px rgba(70, 108, 150, 0.22),
+        inset 0 1px 0 rgba(255, 255, 255, 0.38);
+    }
+
+    .prompt-card:hover::after,
+    .prompt-card:focus-visible::after {
+      opacity: 0.82;
+    }
+
+    .prompt-card img {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+      transform: scale(1.002);
+      filter: brightness(0.98) saturate(1.02) contrast(1);
+      transition: transform 260ms ease, filter 260ms ease;
+    }
+
+    .prompt-card:hover img,
+    .prompt-card:focus-visible img {
+      transform: scale(1.038);
+      filter: brightness(0.98) saturate(1.08) contrast(1.04);
+    }
+
+    .prompt-card-body {
+      z-index: 4;
+      opacity: 0.92;
+      padding: 56px 12px 12px;
+      transform: translateY(0);
+      transition: opacity 160ms ease, transform 160ms ease;
+    }
+
+    .prompt-card:hover .prompt-card-body,
+    .prompt-card:focus-visible .prompt-card-body {
+      opacity: 1;
+      transform: translateY(-1px);
+    }
+
+    .chat-shell {
+      position: fixed;
+      left: 50%;
+      right: auto;
+      bottom: 10px;
+      z-index: 30;
+      width: min(786px, calc(100% - 18px));
+      max-height: min(54vh, 420px);
+      overflow: visible;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      border-radius: 35px;
+      background: rgba(255, 255, 255, 0.75);
+      color: #333333;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+      backdrop-filter: blur(24px);
+      transform: translateX(-50%);
+      padding: 12px 16px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px 10px;
+      transition:
+        width 0.24s ease,
+        max-height 0.24s ease,
+        padding 0.24s ease,
+        opacity 0.24s ease;
+    }
+
+    .chat-shell .title-row {
+      display: none;
+    }
+
+    .chat-shell.ratio-expanded {
+      border-radius: 35px;
+    }
+
+    .chat-shell .input-area {
+      flex: 1 1 100%;
+      width: 100%;
+      grid-template-columns: 1fr;
+      gap: 0;
+    }
+
+    .chat-shell .input-wrapper {
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .chat-shell textarea {
+      min-height: 40px;
+      max-height: 96px;
+      padding: 0 6px;
+      color: #333333;
+      font-size: 15px;
+      line-height: 1.45;
+    }
+
+    .chat-shell textarea::placeholder {
+      color: #8e8e93;
+    }
+
+    .chat-shell .send-btn {
+      width: 35px;
+      min-width: 35px;
+      min-height: 35px;
+      height: 35px;
+      border: 1px solid rgba(0, 0, 0, 0.04);
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.05);
+      color: #333333;
+      font-size: 18px;
+      font-weight: 500;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: none;
+    }
+
+    .chat-shell .send-btn:hover:not(:disabled) {
+      background: rgba(0, 0, 0, 0.08);
+      transform: none;
+    }
+
+    .chat-shell .tool-row {
+      flex: 1 1 100%;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 0;
+      padding-top: 0;
+      margin-top: 0;
+      gap: 7px;
+      flex-wrap: nowrap;
+    }
+
+    .chat-shell .left-tools,
+    .chat-shell .right-tools {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      flex-wrap: nowrap;
+      min-width: 0;
+    }
+
+    .chat-shell .right-tools {
+      margin-left: auto;
+      flex: 0 0 auto;
+    }
+
+    .chat-shell .mini-btn,
+    .chat-shell .composer-select,
+    .chat-shell .keep-style {
+      height: 38px;
+      border: 0;
+      background: rgba(0, 0, 0, 0.05);
+      color: #333333;
+      border-radius: 999px;
+      padding: 0 12px;
+      font-size: 14px;
+      font-weight: 700;
+      box-shadow: none;
+    }
+
+    .chat-shell .mini-btn:hover:not(:disabled),
+    .chat-shell .composer-select:hover,
+    .chat-shell .keep-style:hover {
+      background: rgba(0, 0, 0, 0.08);
+    }
+
+    .chat-shell .reference-btn {
+      width: 35px;
+      min-width: 35px;
+      height: 35px;
+      text-align: center;
+      white-space: nowrap;
+      padding: 0;
+      font-size: 24px;
+      font-weight: 500;
+      line-height: 1;
+    }
+
+    .chat-shell .composer-select {
+      outline: none;
+      cursor: pointer;
+    }
+
+    .chat-shell .ratio-trigger {
+      width: auto;
+      min-width: 86px;
+      height: 35px;
+      text-align: left;
+      text-transform: lowercase;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      justify-content: flex-start;
+      white-space: nowrap;
+    }
+
+    .chat-shell .ratio-chip-icon {
+      width: 17px;
+      height: 11px;
+      border: 1.5px solid rgba(51, 51, 51, 0.5);
+      border-radius: 4px;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+      flex: 0 0 auto;
+    }
+
+    .chat-shell .composer-redraw-toggle {
+      min-width: 82px;
+      height: 35px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 12px;
+      cursor: pointer;
+    }
+
+    .chat-shell .composer-redraw-toggle input[type="checkbox"] {
+      width: 14px;
+      height: 14px;
+      margin: 0;
+      accent-color: #333333;
+      cursor: pointer;
+    }
+
+    .chat-shell .composer-redraw-toggle span {
+      line-height: 1;
+    }
+
+    .chat-shell .ratio-inline-row {
+      flex: 1 1 100%;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      flex-wrap: wrap;
+      margin-top: 0;
+    }
+
+    .chat-shell .ratio-inline-item {
+      height: 31px;
+      border: 0;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.04);
+      color: #555555;
+      padding: 0 12px;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.16s ease;
+      text-transform: lowercase;
+    }
+
+    .chat-shell .ratio-inline-item:hover {
+      background: rgba(0, 0, 0, 0.07);
+    }
+
+    .chat-shell .ratio-inline-item.active {
+      background: rgba(0, 0, 0, 0.08);
+      color: #222222;
+    }
+
+    .chat-shell .ratio-menu {
+      bottom: calc(100% + 8px);
+      top: auto;
+      border-color: rgba(255, 255, 255, 0.45);
+      background: rgba(255, 255, 255, 0.88);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    }
+
+    .chat-shell .ratio-item {
+      color: #333333;
+    }
+
+    .chat-shell .ratio-item:hover {
+      background: rgba(0, 0, 0, 0.05);
+    }
+
+    .chat-shell .attachments {
+      margin-top: 0;
+    }
+
+    .chat-shell .attachment {
+      border-color: rgba(0, 0, 0, 0.08);
+      background: rgba(0, 0, 0, 0.04);
+    }
+
+    .chat-shell .status {
+      min-height: 16px;
+      margin: 0;
+      padding-left: 2px;
+      color: #6f7f6f;
+      font-size: 12px;
+    }
+
+    .chat-shell .status:empty {
+      display: none;
+    }
+
+    .chat-shell .output-messages {
+      min-height: 40px;
+      max-height: 86px;
+      margin: 0;
+      border-color: rgba(255, 255, 255, 0.35);
+      background: rgba(255, 255, 255, 0.42);
+      padding: 8px;
+    }
+
+    .chat-shell .output-messages .message {
+      margin-bottom: 6px;
+      border-color: rgba(255, 255, 255, 0.35);
+      background: rgba(255, 255, 255, 0.48);
+      color: #555555;
+    }
+
+    .chat-shell .messages-empty,
+    .chat-shell .output-time {
+      color: #8e8e93;
+    }
+
+    .chat-shell.gallery-scrolling {
+      width: min(620px, calc(100% - 18px));
+      max-height: 58px;
+      padding: 10px 16px;
+      gap: 0;
+      opacity: 0.86;
+    }
+
+    .chat-shell.gallery-scrolling .tool-row,
+    .chat-shell.gallery-scrolling .ratio-inline-row,
+    .chat-shell.gallery-scrolling .attachments,
+    .chat-shell.gallery-scrolling .status,
+    .chat-shell.gallery-scrolling .output-messages {
+      display: none;
+    }
+
+    .chat-shell.gallery-scrolling .input-area {
+      flex-basis: 100%;
+    }
+
+    .chat-shell.gallery-scrolling textarea {
+      min-height: 32px;
+      max-height: 32px;
+      overflow: hidden;
+    }
+
+    @media (max-width: 900px) {
+      body {
+        overflow: auto;
+      }
+
+      .main {
+        grid-template-columns: 1fr;
+        gap: 10px;
+        align-items: start;
+        justify-content: stretch;
+        padding: 0 0 360px;
+      }
+
+      .left-rail {
+        display: none;
+      }
+
+      .main-board {
+        width: 100%;
+      }
+
+      .sora-topbar {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .sora-subtitle {
+        text-align: left;
+      }
+
+      .hero-headline {
+        font-size: 30px;
+        line-height: 1.24;
+        margin-top: 2px;
+      }
+
+      .chat-shell {
+        bottom: 10px;
+        width: calc(100% - 20px);
+        max-height: 52vh;
+        padding: 12px;
+        border-radius: 35px;
+      }
+
+      .chat-shell .input-area {
+        grid-template-columns: 1fr;
+      }
+
+      .chat-shell .tool-row {
+        flex-wrap: nowrap;
+        align-items: center;
+      }
+
+      .chat-shell .left-tools {
+        flex: 1 1 auto;
+        flex-wrap: nowrap;
+      }
+
+      .chat-shell .right-tools {
+        width: auto;
+        margin-left: auto;
+      }
+
+      .chat-shell .send-btn {
+        width: 35px;
+        min-height: 35px;
+      }
+
+      .result-panel {
+        min-height: 220px;
+      }
+
+      .result-loading,
+      .result-empty {
+        min-height: 194px;
+      }
+
+      .top-actions {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+      }
+
+      .ability-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .gallery-panel {
+        min-height: 320px;
+      }
+
+      .gallery-search {
+        min-width: 140px;
+        flex: 1;
+      }
+
+      .prompt-gallery-head {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .prompt-gallery-count {
+        white-space: normal;
+      }
+
+      .prompt-gallery-strip {
+        padding: 64px 18px 400px;
+      }
+
+      .prompt-gallery-marquee::before,
+      .prompt-gallery-marquee::after {
+        width: 34px;
+      }
+
+      .prompt-gallery-track {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        grid-auto-rows: 92px;
+        max-width: none;
+        padding: 0;
+      }
+
+      .prompt-card.layout-feature,
+      .prompt-card.layout-wide {
+        grid-column: span 2;
+      }
+
+      .prompt-card.layout-tall {
+        grid-row: span 3;
+      }
+
+}
+
+    @media (max-width: 560px) {
+      .main {
+        padding-inline: 0;
+        padding-bottom: 390px;
+      }
+
+      .prompt-gallery-strip {
+        padding: 52px 10px 410px;
+      }
+
+      .ai-dialog-layer {
+        padding: 68px 12px 16px;
+        align-items: flex-start;
+      }
+
+      .ai-dialog {
+        border-radius: 18px;
+        width: calc(100vw - 24px);
+        height: calc(100vh - 84px);
+        max-height: none;
+      }
+
+      .ai-dialog-head {
+        padding: 12px;
+      }
+
+      .ai-dialog-heading {
+        font-size: 14px;
+        white-space: normal;
+      }
+
+      .ai-dialog-body {
+        max-height: none;
+        padding: 14px;
+      }
+
+      .prompt-gallery-track {
+        grid-template-columns: 1fr;
+        grid-auto-rows: 86px;
+        gap: 10px;
+        padding-inline: 0;
+      }
+
+      .prompt-card {
+        border-radius: 12px;
+      }
+
+      .prompt-card.layout-feature,
+      .prompt-card.layout-wide,
+      .prompt-card.layout-landscape,
+      .prompt-card.layout-square,
+      .prompt-card.layout-portrait,
+      .prompt-card.layout-tall {
+        grid-column: span 1;
+      }
+
+      .prompt-card.layout-feature,
+      .prompt-card.layout-wide {
+        grid-row: span 2;
+      }
+
+      .prompt-card.layout-landscape,
+      .prompt-card.layout-square {
+        grid-row: span 2;
+      }
+
+      .prompt-card.layout-portrait,
+      .prompt-card.layout-tall {
+        grid-row: span 3;
+      }
+
+      .chat-shell .input-area {
+        grid-template-columns: 1fr;
+      }
+
+      .chat-shell .left-tools {
+        display: flex;
+        width: auto;
+      }
+
+      .chat-shell .ratio-trigger {
+        min-width: 78px;
+      }
+
+      .chat-shell .send-btn {
+        width: 35px;
+        min-height: 35px;
+      }
+
+      .chat-shell .right-tools {
+        margin-left: auto;
+      }
+    }
+
+    /* Keep the top navigation visible across all layouts and overlays. */
+    .top-actions {
+      position: fixed;
+      top: max(14px, env(safe-area-inset-top));
+      right: max(16px, env(safe-area-inset-right));
+      left: auto;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 10px;
+      z-index: 120;
+      pointer-events: auto;
+    }
+
+    @media (max-width: 640px) {
+      .top-actions {
+        top: max(10px, env(safe-area-inset-top));
+        right: max(10px, env(safe-area-inset-right));
+        left: auto;
+      }
+
+    }
+    .top-actions {
+      position: fixed;
+      top: 14px;
+      right: 18px;
+      z-index: 85;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .top-actions .action-btn {
+      position: relative;
+      min-width: 44px;
+      height: 44px;
+      padding: 0 14px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.75);
+      border-color: rgba(255, 255, 255, 0.4);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+    }
+
+    .top-actions .gallery-entry {
+      min-width: 64px;
+      font-weight: 600;
+    }
+
+    .user-actions {
+      position: fixed;
+      top: 14px;
+      left: 18px;
+      z-index: 86;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      flex-wrap: wrap;
+      max-width: min(560px, calc(100vw - 160px));
+    }
+
+    .user-pill {
+      min-height: 38px;
+      padding: 0 14px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      background: rgba(255, 255, 255, 0.75);
+      color: #333333;
+      font-size: 13px;
+      font-weight: 700;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+      backdrop-filter: blur(18px) saturate(1.1);
+    }
+
+    .user-name {
+      max-width: 170px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .credit-pill {
+      color: #9ff4ff;
+      border-color: rgba(67, 216, 232, 0.3);
+      background:
+        linear-gradient(145deg, rgba(37, 210, 226, 0.18), rgba(255, 255, 255, 0.045)),
+        rgba(18, 31, 45, 0.76);
+    }
+
+    .user-btn {
+      cursor: pointer;
+      transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+    }
+
+    .user-btn:hover {
+      transform: translateY(-1px);
+      border-color: rgba(255, 255, 255, 0.34);
+      background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.08)),
+        rgba(30, 38, 54, 0.8);
+    }
+
+    .auth-mask {
+      position: fixed;
+      inset: 0;
+      z-index: 142;
+      display: grid;
+      place-items: start center;
+      padding: max(76px, calc(env(safe-area-inset-top) + 76px)) 18px 24px;
+      background: rgba(4, 9, 18, 0.24);
+      backdrop-filter: blur(4px);
+    }
+
+    .auth-card {
+      width: min(420px, calc(100vw - 28px));
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 24px;
+      background:
+        radial-gradient(circle at 20% 0%, rgba(118, 188, 196, 0.24), transparent 34%),
+        linear-gradient(142deg, rgba(63, 74, 88, 0.82), rgba(26, 30, 42, 0.92) 56%, rgba(18, 22, 34, 0.94)),
+        rgba(20, 26, 38, 0.9);
+      color: var(--text);
+      box-shadow:
+        0 26px 80px rgba(0, 0, 0, 0.42),
+        inset 0 1px 0 rgba(255, 255, 255, 0.14);
+      backdrop-filter: blur(24px) saturate(1.15);
+      overflow: hidden;
+    }
+
+    .auth-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 20px 22px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.11);
+    }
+
+    .auth-head h3 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 800;
+    }
+
+    .auth-head p {
+      margin: 5px 0 0;
+      color: rgba(218, 226, 238, 0.7);
+      font-size: 13px;
+    }
+
+    .auth-form {
+      padding: 18px 22px 22px;
+      display: grid;
+      gap: 13px;
+    }
+
+    .auth-field {
+      display: grid;
+      gap: 7px;
+      color: rgba(229, 236, 248, 0.78);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .auth-field input {
+      width: 100%;
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 15px;
+      padding: 12px 13px;
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      outline: none;
+    }
+
+    .auth-field input:focus {
+      border-color: rgba(127, 219, 231, 0.58);
+      box-shadow: 0 0 0 3px rgba(68, 207, 224, 0.12);
+    }
+
+    .auth-error {
+      margin: 0;
+      color: #ffc4cf;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .auth-submit {
+      min-height: 42px;
+      border: 1px solid rgba(159, 244, 255, 0.42);
+      border-radius: 15px;
+      background:
+        linear-gradient(135deg, rgba(109, 207, 222, 0.32), rgba(255, 255, 255, 0.08)),
+        rgba(52, 94, 112, 0.52);
+      color: #f7fcff;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .auth-submit:disabled {
+      opacity: 0.54;
+      cursor: not-allowed;
+    }
+
+    .auth-link {
+      border: 0;
+      background: transparent;
+      color: rgba(198, 230, 240, 0.82);
+      font-size: 13px;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .auth-balance {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 16px;
+      padding: 12px 14px;
+      background: rgba(255, 255, 255, 0.06);
+      color: rgba(226, 236, 248, 0.74);
+      font-size: 13px;
+    }
+
+    .auth-balance strong {
+      color: #9ff4ff;
+      font-size: 18px;
+    }
+
+    @media (max-width: 760px) {
+      .user-actions {
+        top: max(10px, env(safe-area-inset-top));
+        left: max(10px, env(safe-area-inset-left));
+        max-width: calc(100vw - 104px);
+        gap: 7px;
+      }
+
+      .user-pill {
+        min-height: 34px;
+        padding: 0 10px;
+        font-size: 12px;
+      }
+
+      .user-name {
+        max-width: 120px;
+      }
+
+      .auth-mask {
+        padding-top: max(72px, calc(env(safe-area-inset-top) + 72px));
+      }
+    }
+
+    .task-symbol {
+      font-size: 17px;
+      line-height: 1;
+    }
+
+    .task-badge {
+      position: absolute;
+      right: -5px;
+      top: -8px;
+      min-width: 21px;
+      height: 21px;
+      border-radius: 999px;
+      padding: 0 6px;
+      display: grid;
+      place-items: center;
+      background: #12c8d2;
+      color: #092027;
+      font-size: 12px;
+      font-weight: 700;
+      box-shadow: 0 8px 18px rgba(18, 200, 210, 0.28);
+    }
+
+    .workspace-panel {
+      position: fixed;
+      z-index: 82;
+      top: 66px;
+      right: 18px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background:
+        linear-gradient(138deg, rgba(71, 81, 92, 0.72), rgba(30, 34, 44, 0.84) 48%, rgba(18, 23, 34, 0.88)),
+        rgba(20, 26, 38, 0.88);
+      backdrop-filter: blur(24px) saturate(1.16);
+      box-shadow:
+        0 26px 80px rgba(0, 0, 0, 0.38),
+        inset 0 1px 0 rgba(255, 255, 255, 0.14);
+      color: var(--text);
+      overflow: hidden;
+    }
+
+    .task-panel {
+      width: min(380px, calc(100vw - 28px));
+      border-radius: 24px;
+    }
+
+    .library-panel {
+      width: min(1100px, calc(100vw - 28px));
+      max-height: min(720px, calc(100vh - 96px));
+      border-radius: 22px;
+    }
+
+    .workspace-panel-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 18px 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .workspace-panel-head h3 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+
+    .workspace-panel-head p {
+      margin: 5px 0 0;
+      color: rgba(212, 223, 238, 0.72);
+      font-size: 13px;
+    }
+
+    .panel-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .danger-mini {
+      color: #ffd0d8;
+      border-color: rgba(255, 118, 144, 0.36);
+      background: rgba(255, 118, 144, 0.1);
+    }
+
+    .task-list-panel {
+      max-height: 440px;
+      overflow: auto;
+      padding: 10px;
+      display: grid;
+      gap: 9px;
+    }
+
+    .task-row-card {
+      display: grid;
+      grid-template-columns: 56px minmax(0, 1fr);
+      gap: 11px;
+      align-items: center;
+      padding: 10px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .task-row-card.running {
+      border-color: rgba(136, 182, 255, 0.34);
+    }
+
+    .task-row-card.failed,
+    .task-row-card.interrupted {
+      border-color: rgba(255, 138, 138, 0.26);
+    }
+
+    .task-thumb {
+      width: 56px;
+      height: 56px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 16px;
+      background: rgba(5, 10, 18, 0.34);
+      overflow: hidden;
+      display: grid;
+      place-items: center;
+      color: var(--subtext);
+    }
+
+    .task-thumb img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+    }
+
+    .task-spinner {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 255, 255, 0.16);
+      border-top-color: var(--accent);
+      animation: spin 0.9s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .task-row-main {
+      min-width: 0;
+    }
+
+    .task-row-main strong {
+      display: block;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      font-size: 13px;
+    }
+
+    .task-row-main p {
+      margin: 4px 0 0;
+      color: rgba(212, 223, 238, 0.72);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .task-log,
+    .task-error {
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .task-error {
+      color: #ffd2d2 !important;
+    }
+
+    .workspace-empty {
+      min-height: 140px;
+      border: 1px dashed rgba(255, 255, 255, 0.2);
+      border-radius: 18px;
+      color: rgba(212, 223, 238, 0.72);
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 18px;
+    }
+
+    .library-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 12px;
+      max-height: calc(min(720px, 100vh - 96px) - 88px);
+      overflow: auto;
+      padding: 18px;
+    }
+
+    .library-card {
+      position: relative;
+      aspect-ratio: 1;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 18px;
+      overflow: hidden;
+      background: rgba(255, 255, 255, 0.06);
+      padding: 0;
+    }
+
+    .library-card img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+      transition: transform 0.2s ease;
+    }
+
+    .library-card:hover img {
+      transform: scale(1.035);
+    }
+
+    .library-check {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.74);
+      background: rgba(0, 0, 0, 0.44);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+    }
+
+    .preview-mask {
+      position: fixed;
+      inset: 0;
+      z-index: 95;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(10px);
+      display: grid;
+      place-items: center;
+      padding: 18px;
+    }
+
+    .preview-panel {
+      position: relative;
+      width: min(1080px, 100%);
+      max-height: min(820px, calc(100vh - 36px));
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+      gap: 0;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 22px;
+      overflow: hidden;
+      background: rgba(20, 26, 38, 0.9);
+      box-shadow: 0 30px 90px rgba(0, 0, 0, 0.42);
+    }
+
+    .preview-panel > img {
+      width: 100%;
+      height: 100%;
+      max-height: min(820px, calc(100vh - 36px));
+      object-fit: contain;
+      background: rgba(0, 0, 0, 0.28);
+    }
+
+    .preview-panel aside {
+      padding: 22px;
+      display: grid;
+      align-content: start;
+      gap: 12px;
+      border-left: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .preview-panel h3,
+    .preview-panel p {
+      margin: 0;
+    }
+
+    .preview-panel p {
+      color: rgba(212, 223, 238, 0.76);
+      font-size: 13px;
+      line-height: 1.55;
+      word-break: break-word;
+    }
+
+    .prompt-preview-panel {
+      width: min(1240px, 100%);
+      grid-template-columns: minmax(0, 1.08fr) minmax(340px, 440px);
+      overflow: auto;
+    }
+
+    .prompt-preview-image {
+      width: 100%;
+      height: 100%;
+      max-height: min(860px, calc(100vh - 36px));
+      object-fit: contain;
+      background:
+        radial-gradient(circle at 50% 35%, rgba(255, 255, 255, 0.08), transparent 40%),
+        rgba(0, 0, 0, 0.32);
+    }
+
+    .prompt-preview-meta {
+      display: grid;
+      grid-template-columns: 88px minmax(0, 1fr);
+      gap: 8px 12px;
+      padding: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.06);
+      font-size: 13px;
+    }
+
+    .prompt-preview-meta span:nth-child(odd) {
+      color: rgba(212, 223, 238, 0.62);
+    }
+
+    .prompt-preview-meta span:nth-child(even) {
+      color: rgba(244, 248, 255, 0.92);
+      word-break: break-word;
+    }
+
+    .prompt-preview-prompt {
+      width: 100%;
+      min-height: 220px;
+      max-height: 34vh;
+      resize: vertical;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 14px;
+      padding: 12px;
+      background: rgba(0, 0, 0, 0.22);
+      color: rgba(244, 248, 255, 0.92);
+      font-size: 13px;
+      line-height: 1.6;
+      outline: none;
+    }
+
+    .prompt-copy-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .preview-close {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      z-index: 2;
+    }
+
+    .auth-card,
+    .workspace-panel,
+    .preview-panel {
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 35px;
+      background: rgba(18, 18, 18, 0.75);
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(24px);
+    }
+
+    .chat-shell .ratio-inline-row {
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      border-radius: 35px;
+      background: rgba(255, 255, 255, 0.75);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+      backdrop-filter: blur(24px);
+      padding: 8px;
+    }
+
+    /* Align button styling with the AI dialog control style. */
+    .action-btn,
+    .top-actions .action-btn,
+    .user-btn,
+    .mini-btn,
+    .chat-shell .mini-btn,
+    .auth-submit,
+    .auth-link,
+    .send-btn,
+    .chat-shell .send-btn,
+    .chat-shell .ratio-inline-item,
+    .attachment button {
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.75);
+      color: #333333;
+      box-shadow: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      transform: none;
+    }
+
+    .action-btn:hover:not(:disabled),
+    .top-actions .action-btn:hover:not(:disabled),
+    .user-btn:hover:not(:disabled),
+    .mini-btn:hover:not(:disabled),
+    .chat-shell .mini-btn:hover:not(:disabled),
+    .auth-submit:hover:not(:disabled),
+    .auth-link:hover:not(:disabled),
+    .send-btn:hover:not(:disabled),
+    .chat-shell .send-btn:hover:not(:disabled),
+    .chat-shell .ratio-inline-item:hover:not(:disabled),
+    .attachment button:hover:not(:disabled) {
+      border-color: rgba(255, 255, 255, 0.55);
+      background: rgba(255, 255, 255, 0.86);
+      color: #222222;
+      transform: none;
+    }
+
+    .action-btn:disabled,
+    .top-actions .action-btn:disabled,
+    .user-btn:disabled,
+    .mini-btn:disabled,
+    .chat-shell .mini-btn:disabled,
+    .auth-submit:disabled,
+    .auth-link:disabled,
+    .send-btn:disabled,
+    .chat-shell .send-btn:disabled,
+    .chat-shell .ratio-inline-item:disabled,
+    .attachment button:disabled {
+      opacity: 0.48;
+      cursor: not-allowed;
+    }
+
+    .danger-mini,
+    .chat-shell .ratio-inline-item.active {
+      border-color: rgba(255, 255, 255, 0.55);
+      background: rgba(0, 0, 0, 0.08);
+      color: #222222;
+    }
+
+    .chat-shell .mini-btn,
+    .chat-shell .composer-select,
+    .chat-shell .keep-style,
+    .chat-shell .send-btn,
+    .chat-shell .ratio-inline-item,
+    .chat-shell .attachment button {
+      border-color: rgba(0, 0, 0, 0.04);
+      background: rgba(0, 0, 0, 0.05);
+      color: #333333;
+      box-shadow: none;
+    }
+
+    .chat-shell .mini-btn:hover:not(:disabled),
+    .chat-shell .composer-select:hover,
+    .chat-shell .keep-style:hover,
+    .chat-shell .send-btn:hover:not(:disabled),
+    .chat-shell .ratio-inline-item:hover:not(:disabled),
+    .chat-shell .attachment button:hover:not(:disabled) {
+      border-color: rgba(0, 0, 0, 0.06);
+      background: rgba(0, 0, 0, 0.08);
+      color: #222222;
+    }
+
+    .chat-shell .ratio-inline-item.active {
+      border-color: rgba(0, 0, 0, 0.06);
+      background: rgba(0, 0, 0, 0.08);
+      color: #222222;
+    }
+
+    .top-actions .action-btn {
+      border-color: rgba(255, 255, 255, 0.4);
+      background: rgba(255, 255, 255, 0.75);
+      color: #333333;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+    }
+
+    .top-actions .action-btn:hover:not(:disabled) {
+      border-color: rgba(255, 255, 255, 0.55);
+      background: rgba(255, 255, 255, 0.86);
+      color: #222222;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    }
+
+    .user-actions {
+      top: 14px;
+      left: 18px;
+      right: auto;
+      z-index: 121;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: nowrap;
+      padding: 6px 10px;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      outline: none;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.75);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+      backdrop-filter: blur(18px) saturate(1.12);
+      transition: border-color 0.2s ease, background 0.2s ease;
+      max-width: calc(100vw - 24px);
+    }
+
+    .user-actions:hover {
+      border-color: rgba(255, 255, 255, 0.55);
+      background: rgba(255, 255, 255, 0.86);
+    }
+
+    .user-actions .user-pill {
+      min-height: 36px;
+      padding: 0 12px;
+      border: 0;
+      border-radius: 999px;
+      background: transparent;
+      box-shadow: none;
+      color: #333333;
+      backdrop-filter: none;
+    }
+
+    .user-actions .user-btn {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-size: 15px;
+      font-weight: 400;
+      letter-spacing: 0;
+      text-transform: none;
+      color: #333333;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      transition: background-color 0.2s, color 0.2s, transform 0.2s;
+    }
+
+    .user-actions .user-btn:hover:not(:disabled) {
+      background-color: rgba(0, 0, 0, 0.05);
+      color: #222222;
+    }
+
+    .user-actions .user-btn:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    .user-actions .user-btn:disabled {
+      opacity: 0.42;
+      color: rgba(51, 51, 51, 0.42);
+      background: transparent;
+    }
+
+    .user-actions .login-register-btn {
+      min-height: 36px;
+      padding: 0 18px;
+      border: none;
+      background: rgba(0, 0, 0, 0.05);
+      color: #333333;
+      box-shadow: none;
+    }
+
+    .user-actions .login-register-btn:hover:not(:disabled) {
+      background: rgba(0, 0, 0, 0.08);
+      color: #222222;
+    }
+
+    .user-actions .user-logo {
+      min-width: 56px;
+      justify-content: flex-start;
+      padding-left: 8px;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0;
+      text-transform: none;
+      color: #333333;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    .user-status-actions {
+      position: fixed;
+      top: 14px;
+      right: 154px;
+      z-index: 121;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      max-width: min(52vw, 560px);
+    }
+
+    .user-status-actions .user-pill {
+      position: relative;
+      min-width: 44px;
+      height: 44px;
+      min-height: 44px;
+      padding: 0 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.75);
+      color: #333333;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+      backdrop-filter: blur(18px) saturate(1.1);
+    }
+
+    .user-status-actions .user-name {
+      max-width: 150px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .user-status-actions .credit-pill {
+      color: #333333;
+      border-color: rgba(255, 255, 255, 0.4);
+      background: rgba(255, 255, 255, 0.75);
+    }
+
+    /* Keep secondary menus aligned with the AI dialog light glass palette. */
+    .auth-mask,
+    .preview-mask {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(10px) saturate(0.95);
+    }
+
+    .auth-card,
+    .workspace-panel,
+    .preview-panel,
+    .ratio-menu,
+    .floating-ratio-menu {
+      border-color: rgba(255, 255, 255, 0.4);
+      background: rgba(255, 255, 255, 0.75);
+      color: #333333;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
+      backdrop-filter: blur(24px) saturate(1.1);
+    }
+
+    .ratio-item {
+      border-color: transparent;
+      background: rgba(0, 0, 0, 0.04);
+      color: #333333;
+    }
+
+    .ratio-item:hover {
+      border-color: rgba(0, 0, 0, 0.08);
+      background: rgba(0, 0, 0, 0.06);
+    }
+
+    .auth-head,
+    .workspace-panel-head,
+    .preview-panel aside {
+      border-color: rgba(255, 255, 255, 0.4);
+    }
+
+    .auth-head h3,
+    .workspace-panel-head h3,
+    .preview-panel h3,
+    .prompt-preview-title,
+    .prompt-copy-label,
+    .prompt-preview-ratio-line,
+    .task-row-main strong {
+      color: #333333;
+    }
+
+    .auth-head p,
+    .workspace-panel-head p,
+    .preview-panel p,
+    .task-row-main p,
+    .workspace-empty,
+    .field label,
+    .hint {
+      color: #8e8e93;
+    }
+
+    .field input,
+    .field select,
+    select,
+    .auth-field input,
+    .prompt-preview-prompt {
+      border-color: rgba(0, 0, 0, 0.08);
+      background: rgba(0, 0, 0, 0.04);
+      color: #333333;
+    }
+
+    .field input::placeholder,
+    .auth-field input::placeholder,
+    .prompt-preview-prompt::placeholder {
+      color: #8e8e93;
+    }
+
+    .auth-field,
+    .auth-balance,
+    .task-row-card,
+    .prompt-preview-meta {
+      color: #555555;
+    }
+
+    .auth-balance,
+    .task-row-card,
+    .prompt-preview-meta {
+      border-color: rgba(255, 255, 255, 0.35);
+      background: rgba(255, 255, 255, 0.42);
+    }
+
+    .auth-balance strong,
+    .prompt-preview-meta span:nth-child(even),
+    .prompt-preview-meta span:first-child {
+      color: #333333;
+    }
+
+    .prompt-preview-meta span:nth-child(odd) {
+      color: #8e8e93;
+    }
+
+    .auth-link {
+      color: #555555;
+    }
+
+    .auth-link:hover:not(:disabled) {
+      color: #222222;
+    }
+
+    .auth-error,
+    .task-error {
+      color: #b4535f !important;
+    }
+
+    .status.error {
+      color: #b4535f;
+    }
+
+    .status.ok {
+      color: #6f7f6f;
+    }
+
+    .auth-field input:focus {
+      border-color: rgba(51, 51, 51, 0.2);
+      box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.06);
+    }
+
+    .task-thumb,
+    .library-card {
+      border-color: rgba(0, 0, 0, 0.08);
+      background: rgba(0, 0, 0, 0.04);
+      color: #8e8e93;
+    }
+
+    .task-row-card.running {
+      border-color: rgba(51, 51, 51, 0.18);
+    }
+
+    .task-row-card.failed,
+    .task-row-card.interrupted {
+      border-color: rgba(180, 83, 95, 0.28);
+    }
+
+    .task-spinner {
+      border-color: rgba(0, 0, 0, 0.12);
+      border-top-color: #333333;
+    }
+
+    .workspace-empty {
+      border-color: rgba(0, 0, 0, 0.12);
+    }
+
+    .preview-panel > img {
+      background: rgba(255, 255, 255, 0.35);
+    }
+
+    .prompt-preview-image {
+      background:
+        radial-gradient(circle at 50% 35%, rgba(255, 255, 255, 0.26), transparent 40%),
+        rgba(255, 255, 255, 0.35);
+    }
+
+    .library-check {
+      border-color: rgba(255, 255, 255, 0.8);
+      background: rgba(255, 255, 255, 0.75);
+      color: #333333;
+    }
+
+    @media (max-width: 720px) {
+      .user-actions {
+        top: max(10px, env(safe-area-inset-top));
+        left: max(10px, env(safe-area-inset-left));
+        padding: 5px 8px;
+        gap: 4px;
+        max-width: calc(100vw - 20px);
+      }
+
+      .user-actions .user-pill {
+        min-height: 30px;
+        padding: 0 9px;
+        font-size: 12px;
+      }
+
+      .user-actions .login-register-btn {
+        min-height: 32px;
+        padding: 0 12px;
+      }
+
+      .user-status-actions {
+        top: max(54px, calc(env(safe-area-inset-top) + 54px));
+        right: max(10px, env(safe-area-inset-right));
+        max-width: calc(100vw - 20px);
+      }
+
+      .user-status-actions .user-pill {
+        min-width: 38px;
+        height: 38px;
+        min-height: 38px;
+        padding: 0 10px;
+        font-size: 12px;
+      }
+
+      .top-actions {
+        top: 10px;
+        right: 10px;
+        gap: 7px;
+      }
+
+      .workspace-panel {
+        left: 10px;
+        right: 10px;
+        top: 62px;
+      }
+
+      .task-panel,
+      .library-panel {
+        width: auto;
+      }
+
+      .library-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .preview-panel {
+        grid-template-columns: 1fr;
+      }
+
+      .preview-panel aside {
+        border-left: 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.12);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app" class="app" :class="{ 'panel-active': activePanel || authPanelOpen }">
+    <div class="bg-overlay"></div>
+
+    <div class="user-actions">
+      <span class="user-pill user-logo" aria-hidden="true">&nbsp;</span>
+      <button class="user-pill user-btn" type="button" @click="openAuthPanel('redeem')">兑换码</button>
+      <button class="user-pill user-btn" type="button" @click="openRedeemPurchase">充值</button>
+      <button class="user-pill user-btn login-register-btn" type="button" @click="openAuthPanel('login')">登录/注册</button>
+      <button v-if="isLoggedIn" class="user-pill user-btn" type="button" @click="logoutUser">退出</button>
+    </div>
+
+    <div v-if="isLoggedIn" class="user-status-actions">
+      <span class="user-pill user-name">{{ currentUserName }}</span>
+      <span class="user-pill credit-pill">算力值 {{ creditBalanceLabel }}</span>
+    </div>
+
+    <div class="top-actions">
+      <button class="action-btn task-entry" type="button" title="生成任务" aria-label="生成任务" @click="openTopPanel('tasks')">
+        <span class="task-symbol">◴</span>
+        <span v-if="runningTaskCount" class="task-badge">{{ runningTaskCount }}</span>
+      </button>
+      <button class="action-btn gallery-entry" type="button" title="本地图库" aria-label="本地图库" @click="openTopPanel('gallery')">
+        图库
+      </button>
+    </div>
+
+    <section v-if="activePanel === 'tasks'" class="workspace-panel task-panel">
+      <header class="workspace-panel-head">
+        <div>
+          <h3>生成任务</h3>
+          <p>运行 {{ runningOnlyTaskCount }} · 排队 {{ queuedTaskCount }} · 完成 {{ completedTaskCount }} · 失败/中断 {{ failedTaskCount }}</p>
+        </div>
+        <button class="mini-btn panel-close" type="button" @click="closeTopPanel">关闭</button>
+      </header>
+      <div class="task-list-panel">
+        <div v-if="sortedTasks.length === 0" class="workspace-empty">暂无任务</div>
+        <article v-for="task in sortedTasks" :key="task.id" class="task-row-card" :class="task.status">
+          <button class="task-thumb" type="button" @click="openTaskImage(task)">
+            <img v-if="getTaskThumbnail(task)" :src="getTaskThumbnail(task).dataUrl" alt="">
+            <span v-else class="task-spinner"></span>
+          </button>
+          <div class="task-row-main">
+            <strong>{{ task.prompt || "无提示词" }}</strong>
+            <p>{{ task.model || "image model" }} · {{ taskStatusLabel(task.status) }} · {{ formatTaskDuration(task) }}</p>
+            <p v-if="task.error" class="task-error">{{ task.error }}</p>
+            <p v-else-if="task.logs && task.logs.length" class="task-log">{{ task.logs[task.logs.length - 1].text }}</p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section v-if="activePanel === 'gallery'" class="workspace-panel library-panel">
+      <header class="workspace-panel-head">
+        <div>
+          <h3>本地图库</h3>
+          <p>{{ gallerySummary }}</p>
+        </div>
+        <div class="panel-actions">
+          <button class="mini-btn" type="button" @click="toggleGallerySelection">{{ gallerySelectionMode ? "取消选择" : "批量选择" }}</button>
+          <button v-if="gallerySelectionMode && selectedGalleryIds.length" class="mini-btn danger-mini" type="button" @click="deleteSelectedGalleryImages">删除所选</button>
+          <button class="mini-btn" type="button" @click="exportLocalData">导出</button>
+          <button class="mini-btn danger-mini" type="button" @click="clearLocalData">清空本地</button>
+          <button class="mini-btn panel-close" type="button" @click="closeTopPanel">关闭</button>
+        </div>
+      </header>
+      <div class="library-grid">
+        <div v-if="visibleGalleryImages.length === 0" class="workspace-empty">生成完成的图片会出现在这里</div>
+        <button
+          v-for="image in visibleGalleryImages"
+          :key="image.id"
+          class="library-card"
+          type="button"
+          @click="toggleGalleryImageSelection(image)"
+        >
+          <img :src="image.dataUrl" :alt="image.fileName || '生成图片'">
+          <span v-if="gallerySelectionMode" class="library-check">{{ selectedGalleryIds.includes(image.id) ? "✓" : "" }}</span>
+        </button>
+      </div>
+    </section>
+
+    <div v-if="previewImage" class="preview-mask" @click.self="closePreviewImage">
+      <section class="preview-panel">
+        <button class="mini-btn preview-close" type="button" @click="closePreviewImage">关闭</button>
+        <img :src="previewImage.dataUrl" :alt="previewImage.fileName || '生成图片'">
+        <aside>
+          <h3>{{ previewImage.fileName || "生成图片" }}</h3>
+          <p>{{ previewImage.model || "image model" }} · {{ previewImage.ratio || "Auto" }}</p>
+          <p>{{ previewImage.prompt || "无提示词" }}</p>
+          <a class="download-link" :href="previewImage.dataUrl" :download="previewImage.fileName || 'image-result.png'">下载图片</a>
+        </aside>
+      </section>
+    </div>
+
+    <div v-if="promptPreviewItem" class="preview-mask" @click.self="closePromptGalleryPreview">
+      <section class="preview-panel prompt-preview-panel">
+        <button class="mini-btn preview-close" type="button" @click="closePromptGalleryPreview">关闭</button>
+        <img class="prompt-preview-image" :src="promptPreviewItem.imageSrc" :alt="promptPreviewItem.title">
+        <aside>
+          <h3 class="prompt-preview-title">{{ promptPreviewItem.title }}</h3>
+          <p class="prompt-preview-ratio-line">图片比例 {{ promptPreviewItem.aspectRatioLabel }}</p>
+          <div class="prompt-preview-meta">
+            <span>图片比例</span>
+            <span>{{ promptPreviewItem.aspectRatioLabel || "未知" }}</span>
+            <span>图片尺寸</span>
+            <span>{{ promptPreviewItem.width }} × {{ promptPreviewItem.height }}</span>
+            <span>文件大小</span>
+            <span>{{ promptPreviewItem.bytesLabel }}</span>
+          </div>
+          <div class="prompt-copy-row">
+            <strong class="prompt-copy-label">提示词</strong>
+            <button class="mini-btn" type="button" @click="copyPromptGalleryPrompt(promptPreviewItem)">复制提示词</button>
+          </div>
+          <textarea
+            class="prompt-preview-prompt"
+            readonly
+            :value="promptPreviewItem.prompt"
+            @focus="$event.target.select()"
+          ></textarea>
+          <p class="hint">提示词不会自动加入输入框。复制后请手动粘贴到下方对话框使用。</p>
+        </aside>
+      </section>
+    </div>
+
+    <div v-if="authPanelOpen" class="auth-mask" @click.self="closeAuthPanel">
+      <section class="auth-card">
+        <header class="auth-head">
+          <div>
+            <h3>{{ authTitle }}</h3>
+            <p>{{ authPanelMode === 'redeem' ? '输入兑换码增加算力值。' : '登录后才能提交生成任务。' }}</p>
+          </div>
+          <button class="mini-btn panel-close" type="button" @click="closeAuthPanel">关闭</button>
+        </header>
+
+        <form v-if="authPanelMode === 'login'" class="auth-form" @submit.prevent="loginUser">
+          <label class="auth-field">
+            <span>账号</span>
+            <input v-model.trim="authForm.username" type="text" autocomplete="username" placeholder="请输入账号">
+          </label>
+          <label class="auth-field">
+            <span>密码</span>
+            <input v-model="authForm.password" type="password" autocomplete="current-password" placeholder="请输入密码">
+          </label>
+          <p v-if="authError" class="auth-error">{{ authError }}</p>
+          <button class="auth-submit" type="submit" :disabled="authBusy">{{ authBusy ? "登录中..." : "登录" }}</button>
+          <button class="auth-link" type="button" @click="openAuthPanel('register')">没有账号？去注册</button>
+        </form>
+
+        <form v-else-if="authPanelMode === 'register'" class="auth-form" @submit.prevent="registerUser">
+          <label class="auth-field">
+            <span>账号</span>
+            <input v-model.trim="authForm.username" type="text" autocomplete="username" placeholder="英文/数字/_ . @ -">
+          </label>
+          <label class="auth-field">
+            <span>密码</span>
+            <input v-model="authForm.password" type="password" autocomplete="new-password" placeholder="至少 6 位">
+          </label>
+          <label class="auth-field">
+            <span>确认密码</span>
+            <input v-model="authForm.confirmPassword" type="password" autocomplete="new-password" placeholder="再次输入密码">
+          </label>
+          <p v-if="authError" class="auth-error">{{ authError }}</p>
+          <button class="auth-submit" type="submit" :disabled="authBusy">{{ authBusy ? "注册中..." : "注册并登录" }}</button>
+          <button class="auth-link" type="button" @click="openAuthPanel('login')">已有账号？去登录</button>
+        </form>
+
+        <form v-else class="auth-form" @submit.prevent="redeemCredits">
+          <div class="auth-balance">
+            <span>当前算力值</span>
+            <strong>{{ creditBalanceLabel }}</strong>
+          </div>
+          <label class="auth-field">
+            <span>兑换码</span>
+            <input v-model.trim="redeemCode" type="text" placeholder="请输入兑换码">
+          </label>
+          <p v-if="!isLoggedIn" class="auth-error">请先登录后再兑换。</p>
+          <p v-else-if="authError" class="auth-error">{{ authError }}</p>
+          <button class="auth-submit" type="submit" :disabled="redeemBusy || !isLoggedIn">
+            {{ redeemBusy ? "兑换中..." : "兑换" }}
+          </button>
+          <button v-if="!isLoggedIn" class="auth-link" type="button" @click="openAuthPanel('login')">去登录</button>
+        </form>
+      </section>
+    </div>
+
+    <main class="main">
+      <section class="main-board">
+        <section v-if="promptGalleryItems.length" class="prompt-gallery-strip" aria-label="GPT Image 2 prompts 灵感图廊">
+          <header class="prompt-gallery-head">
+            <div>
+              <p class="prompt-gallery-kicker">Prompt Flow</p>
+              <h2 class="prompt-gallery-title">awesome-gpt-image-2-prompts</h2>
+            </div>
+            <span class="prompt-gallery-count">{{ promptGalleryTotal }} 条提示词 · 点击查看大图与提示词</span>
+          </header>
+          <div class="prompt-gallery-marquee" @wheel="handlePromptGalleryWheel">
+            <div class="prompt-gallery-track">
+              <button
+                v-for="item in promptGalleryDisplayItems"
+                :key="item.loopId"
+                :class="['prompt-card', item.layoutClass]"
+                type="button"
+                @click="openPromptGalleryPreview(item)"
+              >
+                <img :src="item.imageSrc" :alt="item.title" loading="lazy" decoding="async">
+                <span class="prompt-card-body">
+                  <span class="prompt-card-title">{{ item.title }}</span>
+                  <span class="prompt-card-meta">{{ item.categoryLabel }}</span>
+                </span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <section class="chat-shell" :class="{ 'ratio-expanded': ratioMenuOpen, 'gallery-scrolling': isChatCollapsed }">
+          <div class="input-area">
+            <div class="input-wrapper">
+              <textarea
+                v-model="chatInput"
+                placeholder="描述你想生成的图片，也可以上传多张参考图..."
+              ></textarea>
+            </div>
+          </div>
+
+          <div class="tool-row">
+            <div class="left-tools">
+              <input
+                ref="imageInput"
+                type="file"
+                accept="image/*"
+                style="display:none"
+                @change="handleUpload"
+              >
+              <button class="mini-btn reference-btn" type="button" title="上传参考图" @click="triggerImageUpload">+</button>
+              <div class="ratio-box">
+                <button
+                  class="mini-btn composer-select ratio-trigger"
+                  type="button"
+                  @click="toggleRatioMenu"
+                  :aria-expanded="ratioMenuOpen ? 'true' : 'false'"
+                >
+                  <span class="ratio-chip-icon" aria-hidden="true"></span>
+                  <span>{{ composerRatioLabel }}</span>
+                </button>
+              </div>
+              <label class="keep-style composer-redraw-toggle" title="开启后优先重绘参考图">
+                <input type="checkbox" v-model="keepStyle">
+                <span>重绘</span>
+              </label>
+            </div>
+            <div class="right-tools">
+              <button class="send-btn" type="button" :disabled="!hasQueueCapacity" @click="sendMessage">
+                <span aria-hidden="true">↑</span>
+                <span class="sr-only">{{ sendButtonText }}</span>
+              </button>
+            </div>
+          </div>
+
+          <div v-if="ratioMenuOpen" class="ratio-inline-row" aria-label="比例选择">
+            <button
+              v-for="ratio in ratioOptions"
+              :key="ratio.label"
+              :class="['ratio-inline-item', { active: currentRatioLabel === ratio.label }]"
+              type="button"
+              @click="selectRatio(ratio)"
+            >
+              {{ ratio.label === "Auto" ? "auto" : ratio.label }}
+            </button>
+          </div>
+
+          <div v-if="attachments.length > 0" class="attachments">
+            <div v-for="item in attachments" :key="item.id" class="attachment">
+              <img :src="item.dataUrl" :alt="item.name">
+              <button @click="removeAttachment(item.id)">✕</button>
+            </div>
+          </div>
+
+          <div v-if="!aiDialogVisible" class="status" :class="statusClass">{{ statusText }}</div>
+        </section>
+
+      </section>
+    </main>
+
+  </div>
+
+  <script>
+    (() => {
+      const { createApp, ref, reactive, computed, nextTick, onMounted, onUnmounted, watch } = Vue;
+
+      createApp({
+        setup() {
+          const LOCAL_DB_NAME = "photo_react_workspace_v1";
+          const LOCAL_DB_VERSION = 1;
+          const GALLERY_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
+          const MAX_ACTIVE_TASKS = 5;
+          const WORKER_API_BASE = "https://draw.lalakunaozi.fun";
+          const AUTH_STORAGE_KEY = "photo_react_auth_v1";
+          const PROMPT_GALLERY_JSON_URL = "./prompt-gallery/gallery_prompts.json";
+          const TEXT_IMAGE_CREDIT_COST = 1;
+          const REFERENCE_IMAGE_CREDIT_COST = 2;
+          const DEFAULT_IMAGE_MODEL = "gpt-image-1.5";
+          const SUPPORTED_IMAGE_SIZES = Object.freeze([
+            { label: "landscape", width: 1536, height: 1024, ratio: 1536 / 1024 },
+            { label: "square", width: 1024, height: 1024, ratio: 1 },
+            { label: "portrait", width: 1024, height: 1536, ratio: 1024 / 1536 }
+          ]);
+          const IMAGE_WORKFLOW_SYSTEM_PROMPT = [
+            "你是一个智能图像生成辅助引擎。",
+            "多模态生成逻辑：纯文本可直接生成；参考图可选，若提供则结合图片与文本创作。",
+            "比例协议：参数 Aspect Ratio，默认 Auto；若用户明确指定比例则严格执行。",
+            "Auto 时应根据提示词构图需求选择最优视觉比例。",
+            "输出目标：图像应符合主体、风格、光影和构图意图。"
+          ].join("\n");
+          const PROMPT_GALLERY_BATCH_SIZE = 36;
+          const ratioOptions = [
+            { label: "Auto", value: null, mode: "auto" },
+            { label: "1:1", value: 1 },
+            { label: "4:3", value: 4 / 3 },
+            { label: "16:9", value: 16 / 9 },
+            { label: "9:16", value: 9 / 16 }
+          ];
+          const STRONG_FIDELITY_KEYWORDS = Object.freeze([
+            "保持其他不变",
+            "保持其他元素不变",
+            "其余不变",
+            "其它不变",
+            "其他不变",
+            "其余元素不变",
+            "其他元素不变",
+            "其它元素不变"
+          ]);
+          const KEEP_SOURCE_RATIO_KEYWORDS = Object.freeze([
+            "保持图片比例不变",
+            "保持比例不变",
+            "保持原图比例不变",
+            "保持原比例不变"
+          ]);
+          const containsAnyKeyword = (text, keywords) => {
+            const source = String(text || "").trim().toLowerCase();
+            if (!source) return false;
+            return (keywords || []).some((keyword) => source.includes(String(keyword || "").trim().toLowerCase()));
+          };
+          const analyzePromptControlSignals = (text) => {
+            return {
+              strongFidelityMode: containsAnyKeyword(text, STRONG_FIDELITY_KEYWORDS),
+              keepAspectRatioUnchanged: containsAnyKeyword(text, KEEP_SOURCE_RATIO_KEYWORDS)
+            };
+          };
+
+          const authToken = ref("");
+          const currentUser = ref(null);
+          const credits = ref(null);
+          const authExpiresAt = ref("");
+          const authPanelOpen = ref(false);
+          const authPanelMode = ref("login");
+          const authBusy = ref(false);
+          const redeemBusy = ref(false);
+          const authError = ref("");
+          const redeemCode = ref("");
+          const authForm = reactive({
+            username: "",
+            password: "",
+            confirmPassword: ""
+          });
+          const promptGalleryPool = ref([]);
+          const promptGalleryItems = ref([]);
+          const promptGalleryRenderedCount = ref(0);
+          const promptGalleryTotal = ref(0);
+          const chatInput = ref("");
+          const latestOutput = ref(null);
+          const outputMessages = ref([]);
+          const outputMessageContainer = ref(null);
+          const aiDialogOpen = ref(false);
+          const activePanel = ref("");
+          const tasks = ref([]);
+          const galleryImages = ref([]);
+          const activeTaskId = ref("");
+          const gallerySelectionMode = ref(false);
+          const selectedGalleryIds = ref([]);
+          const previewImage = ref(null);
+          const promptPreviewItem = ref(null);
+          const attachments = ref([]);
+          const sending = ref(false);
+          const keepStyle = ref(false);
+          const ratioMenuOpen = ref(false);
+          const ratioBusy = ref(false);
+          const selectedRatio = ref(ratioOptions[0]);
+          const currentRatioLabel = ref("Auto");
+          const selectedImageFile = ref(null);
+          const imageInput = ref(null);
+          const statusText = ref("");
+          const statusTone = ref("normal");
+          const isChatCollapsed = ref(false);
+          let aiDialogTouchY = 0;
+          let generationContext = null;
+          let taskQueueRunning = false;
+          let chatCollapseTimer = null;
+
+          const statusClass = computed(() => {
+            if (statusTone.value === "ok") return "ok";
+            if (statusTone.value === "error") return "error";
+            return "";
+          });
+
+          const isLoggedIn = computed(() => Boolean(authToken.value && currentUser.value?.id));
+
+          const currentUserName = computed(() => (
+            String(currentUser.value?.displayName || currentUser.value?.username || "已登录").trim()
+          ));
+
+          const creditBalance = computed(() => {
+            const balance = Number(credits.value?.balance);
+            return Number.isFinite(balance) ? balance : 0;
+          });
+
+          const creditBalanceLabel = computed(() => (
+            isLoggedIn.value ? String(creditBalance.value) : "--"
+          ));
+
+          const requiredCreditsForComposer = computed(() => (
+            attachments.value.length ? REFERENCE_IMAGE_CREDIT_COST : TEXT_IMAGE_CREDIT_COST
+          ));
+
+          const hasEnoughCredits = computed(() => (
+            isLoggedIn.value && creditBalance.value >= requiredCreditsForComposer.value
+          ));
+
+          const authTitle = computed(() => {
+            if (authPanelMode.value === "register") return "注册账号";
+            if (authPanelMode.value === "redeem") return "兑换码";
+            return "登录账号";
+          });
+
+          const sendButtonText = computed(() => {
+            if (!isLoggedIn.value) return "请先登录";
+            if (!hasEnoughCredits.value) return "点数不足";
+            if (!hasQueueCapacity.value) return "队列已满";
+            return "生成";
+          });
+
+          const composerRatioLabel = computed(() => (
+            currentRatioLabel.value === "Auto" ? "auto" : currentRatioLabel.value
+          ));
+
+          const isGenerating = computed(() => sending.value || ratioBusy.value);
+          const aiDialogVisible = computed(() => {
+            return false;
+          });
+          const aiDialogTitle = computed(() => {
+            if (isGenerating.value) return "AI 正在生成图片";
+            if (statusTone.value === "error") return "生成遇到问题";
+            if (statusTone.value === "ok") return "AI 输出完成";
+            return "AI 输出信息";
+          });
+
+          const queuedTaskCount = computed(() => (
+            tasks.value.filter((task) => task.status === "queued").length
+          ));
+
+          const runningOnlyTaskCount = computed(() => (
+            tasks.value.filter((task) => task.status === "running").length
+          ));
+
+          const runningTaskCount = computed(() => queuedTaskCount.value + runningOnlyTaskCount.value);
+
+          const hasQueueCapacity = computed(() => runningTaskCount.value < MAX_ACTIVE_TASKS);
+
+          const canSubmitTask = computed(() => (
+            isLoggedIn.value && hasEnoughCredits.value && hasQueueCapacity.value
+          ));
+
+          const completedTaskCount = computed(() => (
+            tasks.value.filter((task) => task.status === "completed").length
+          ));
+
+          const failedTaskCount = computed(() => (
+            tasks.value.filter((task) => task.status === "failed" || task.status === "interrupted").length
+          ));
+
+          const sortedTasks = computed(() => (
+            [...tasks.value].sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0))
+          ));
+
+          const visibleGalleryImages = computed(() => (
+            [...galleryImages.value].sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0))
+          ));
+
+          const gallerySummary = computed(() => (
+            `共 ${visibleGalleryImages.value.length} 张生成图片，默认保留 7 天。`
+          ));
+
+          const promptGalleryDisplayItems = computed(() => {
+            if (!promptGalleryItems.value.length) return [];
+            return promptGalleryItems.value.map((item, index) => ({
+              ...item,
+              loopId: `${item.id}_${index}`,
+              layoutClass: resolvePromptCardLayoutClass(item, index)
+            }));
+          });
+
+          const showStatus = (text, tone = "normal") => {
+            statusText.value = text;
+            statusTone.value = tone;
+          };
+
+          const scrollOutputToBottom = () => {
+            nextTick(() => {
+              const el = outputMessageContainer.value;
+              if (!el) return;
+              el.scrollTop = el.scrollHeight;
+            });
+          };
+
+          const syncAiDialogDocumentState = () => {
+            const appRoot = document.querySelector(".app");
+            if (!appRoot) return;
+            appRoot.classList.toggle("ai-dialog-active", aiDialogVisible.value);
+          };
+
+          const getAiDialogScrollTarget = (target) => {
+            if (!target?.closest) return null;
+            return target.closest(".ai-dialog-body");
+          };
+
+          const scrollAiDialogBodyBy = (target, deltaY) => {
+            const scrollTarget = getAiDialogScrollTarget(target);
+            if (!scrollTarget) return false;
+            const maxScroll = Math.max(0, scrollTarget.scrollHeight - scrollTarget.clientHeight);
+            if (maxScroll <= 0) return true;
+            scrollTarget.scrollTop = clamp(scrollTarget.scrollTop + deltaY, 0, maxScroll);
+            return true;
+          };
+
+          const handleAiDialogWheel = (event) => {
+            if (!aiDialogVisible.value) return;
+            event.preventDefault();
+            scrollAiDialogBodyBy(event.target, event.deltaY || 0);
+          };
+
+          const handleAiDialogTouchStart = (event) => {
+            if (!aiDialogVisible.value || !event.touches?.length) return;
+            aiDialogTouchY = event.touches[0].clientY;
+          };
+
+          const handleAiDialogTouchMove = (event) => {
+            if (!aiDialogVisible.value || !event.touches?.length) return;
+            event.preventDefault();
+            const nextY = event.touches[0].clientY;
+            scrollAiDialogBodyBy(event.target, aiDialogTouchY - nextY);
+            aiDialogTouchY = nextY;
+          };
+
+          const pushOutputMessage = (text, tone = "normal", role = "assistant") => {
+            if (!text) return;
+            const now = new Date();
+            const time = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}:${String(now.getSeconds()).padStart(2, "0")}`;
+            outputMessages.value.push({
+              id: `${Date.now()}_${Math.random().toString(16).slice(2)}`,
+              text,
+              tone,
+              role,
+              time
+            });
+            if (outputMessages.value.length > 80) {
+              outputMessages.value.splice(0, outputMessages.value.length - 80);
+            }
+            appendTaskLog(activeTaskId.value, outputMessages.value[outputMessages.value.length - 1]);
+            scrollOutputToBottom();
+          };
+
+          const logProcess = (event, payload = {}) => {
+            const time = new Date().toISOString();
+            console.log(`[PhotoReact][${time}] ${event}`, payload);
+          };
+
+          const isAuthExpiryValid = (expiresAt) => {
+            const raw = String(expiresAt || "").trim();
+            if (!raw) return true;
+            const expiresMs = Date.parse(raw);
+            return Number.isFinite(expiresMs) && expiresMs > Date.now();
+          };
+
+          const persistAuthState = (payload = {}) => {
+            if (payload.token) authToken.value = String(payload.token || "").trim();
+            if (payload.user) currentUser.value = payload.user;
+            if (payload.credits) credits.value = payload.credits;
+            const nextExpiresAt = payload.expiresAt || payload.expires_at || authExpiresAt.value || "";
+            if (!isAuthExpiryValid(nextExpiresAt)) {
+              clearAuthState();
+              return;
+            }
+            authExpiresAt.value = String(nextExpiresAt || "").trim();
+            const stored = {
+              token: authToken.value,
+              user: currentUser.value,
+              credits: credits.value,
+              expiresAt: authExpiresAt.value
+            };
+            if (stored.token) {
+              localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(stored));
+            }
+          };
+
+          const clearAuthState = () => {
+            authToken.value = "";
+            currentUser.value = null;
+            credits.value = null;
+            authExpiresAt.value = "";
+            localStorage.removeItem(AUTH_STORAGE_KEY);
+          };
+
+          const loadStoredAuthState = () => {
+            try {
+              const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+              if (!raw) return;
+              const parsed = JSON.parse(raw);
+              if (!isAuthExpiryValid(parsed?.expiresAt || parsed?.expires_at || "")) {
+                clearAuthState();
+                return;
+              }
+              authToken.value = String(parsed?.token || "").trim();
+              currentUser.value = parsed?.user || null;
+              credits.value = parsed?.credits || null;
+              authExpiresAt.value = String(parsed?.expiresAt || parsed?.expires_at || "").trim();
+            } catch (error) {
+              clearAuthState();
+            }
+          };
+
+          const resetAuthForm = () => {
+            authForm.username = "";
+            authForm.password = "";
+            authForm.confirmPassword = "";
+            authError.value = "";
+          };
+
+          const openAuthPanel = (mode = "login") => {
+            authPanelMode.value = mode;
+            authPanelOpen.value = true;
+            authError.value = mode === "redeem" && !isLoggedIn.value ? "请先登录后再兑换。" : "";
+            activePanel.value = "";
+          };
+
+          const openRedeemPurchase = () => {
+            window.open("https://pay.ldxp.cn/shop/Y2DJZA9Y", "_blank", "noopener,noreferrer");
+          };
+
+          const resetComposer = () => {
+            chatInput.value = "";
+            attachments.value = [];
+            keepStyle.value = false;
+            selectedRatio.value = ratioOptions[0];
+            ratioMenuOpen.value = false;
+            showStatus("输入已重制", "ok");
+          };
+
+          const closeAuthPanel = () => {
+            authPanelOpen.value = false;
+            authError.value = "";
+          };
+
+          const getEffectiveKeepStyle = () => (
+            generationContext ? Boolean(generationContext.keepStyle) : Boolean(keepStyle.value)
+          );
+          const getEffectiveSelectedRatio = () => (
+            generationContext?.selectedRatio || selectedRatio.value || ratioOptions[0]
+          );
+
+          let localDbPromise = null;
+          const openLocalDb = () => {
+            if (localDbPromise) return localDbPromise;
+            localDbPromise = new Promise((resolve, reject) => {
+              if (!window.indexedDB) {
+                reject(new Error("当前浏览器不支持 IndexedDB"));
+                return;
+              }
+              const request = window.indexedDB.open(LOCAL_DB_NAME, LOCAL_DB_VERSION);
+              request.onupgradeneeded = () => {
+                const db = request.result;
+                if (!db.objectStoreNames.contains("tasks")) {
+                  db.createObjectStore("tasks", { keyPath: "id" });
+                }
+                if (!db.objectStoreNames.contains("galleryImages")) {
+                  db.createObjectStore("galleryImages", { keyPath: "id" });
+                }
+              };
+              request.onsuccess = () => resolve(request.result);
+              request.onerror = () => reject(request.error || new Error("IndexedDB 打开失败"));
+            });
+            return localDbPromise;
+          };
+
+          const localDbGetAll = async (storeName) => {
+            const db = await openLocalDb();
+            const store = db.transaction(storeName, "readonly").objectStore(storeName);
+            return new Promise((resolve, reject) => {
+              const request = store.getAll();
+              request.onsuccess = () => resolve(Array.isArray(request.result) ? request.result : []);
+              request.onerror = () => reject(request.error);
+            });
+          };
+
+          const localDbPut = async (storeName, value) => {
+            const db = await openLocalDb();
+            const store = db.transaction(storeName, "readwrite").objectStore(storeName);
+            return new Promise((resolve, reject) => {
+              const request = store.put(value);
+              request.onsuccess = () => resolve(value);
+              request.onerror = () => reject(request.error);
+            });
+          };
+
+          const localDbDelete = async (storeName, id) => {
+            const db = await openLocalDb();
+            const store = db.transaction(storeName, "readwrite").objectStore(storeName);
+            return new Promise((resolve, reject) => {
+              const request = store.delete(id);
+              request.onsuccess = () => resolve();
+              request.onerror = () => reject(request.error);
+            });
+          };
+
+          const localDbClear = async (storeName) => {
+            const db = await openLocalDb();
+            const store = db.transaction(storeName, "readwrite").objectStore(storeName);
+            return new Promise((resolve, reject) => {
+              const request = store.clear();
+              request.onsuccess = () => resolve();
+              request.onerror = () => reject(request.error);
+            });
+          };
+
+          const createLocalId = (prefix) => `${prefix}_${Date.now().toString(36)}_${Math.random().toString(16).slice(2, 8)}`;
+
+          const persistTaskRecord = async (task) => {
+            if (!task?.id) return;
+            // Tasks are session-only. Gallery images remain persisted separately.
+          };
+
+          const persistGalleryImage = async (image) => {
+            if (!image?.id) return;
+            try {
+              await localDbPut("galleryImages", JSON.parse(JSON.stringify(image)));
+            } catch (error) {
+              logProcess("gallery_persist_failed", { error: error.message });
+              showStatus("本地图库保存失败，可能是浏览器存储空间不足", "error");
+            }
+          };
+
+          const pruneExpiredGalleryImages = async () => {
+            const now = Date.now();
+            const expired = galleryImages.value.filter((image) => Number(image.expiresAt || 0) <= now);
+            if (!expired.length) return;
+            galleryImages.value = galleryImages.value.filter((image) => Number(image.expiresAt || 0) > now);
+            selectedGalleryIds.value = selectedGalleryIds.value.filter((id) => galleryImages.value.some((image) => image.id === id));
+            for (const image of expired) {
+              await localDbDelete("galleryImages", image.id).catch((error) => {
+                logProcess("gallery_expired_delete_failed", { id: image.id, error: error.message });
+              });
+            }
+          };
+
+          const loadLocalWorkspace = async () => {
+            try {
+              await localDbClear("tasks").catch((error) => {
+                logProcess("tasks_session_clear_failed", { error: error.message });
+              });
+              tasks.value = [];
+              const storedImages = await localDbGetAll("galleryImages");
+              galleryImages.value = storedImages
+                .filter((image) => image?.dataUrl)
+                .sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
+              await pruneExpiredGalleryImages();
+            } catch (error) {
+              logProcess("local_workspace_load_failed", { error: error.message });
+              showStatus(`本地任务/图库加载失败：${error.message}`, "error");
+            }
+          };
+
+          const upsertTask = async (patch) => {
+            if (!patch?.id) return null;
+            const index = tasks.value.findIndex((task) => task.id === patch.id);
+            const next = {
+              ...(index >= 0 ? tasks.value[index] : {}),
+              ...patch,
+              updatedAt: Date.now()
+            };
+            if (index >= 0) {
+              tasks.value.splice(index, 1, next);
+            } else {
+              tasks.value.unshift(next);
+            }
+            await persistTaskRecord(next);
+            return next;
+          };
+
+          const appendTaskLog = (taskId, message) => {
+            if (!taskId || !message) return;
+            const index = tasks.value.findIndex((task) => task.id === taskId);
+            if (index < 0) return;
+            const task = tasks.value[index];
+            const logs = [...(task.logs || []), message].slice(-120);
+            tasks.value.splice(index, 1, { ...task, logs, updatedAt: Date.now() });
+            persistTaskRecord(tasks.value[index]);
+          };
+
+          const addGalleryImage = async ({ dataUrl, fileName, prompt, taskId, model, ratio }) => {
+            const now = Date.now();
+            const image = {
+              id: createLocalId("img"),
+              dataUrl,
+              fileName: fileName || `image_${now}.png`,
+              prompt: prompt || "",
+              taskId: taskId || "",
+              model: model || "",
+              ratio: ratio || "",
+              createdAt: now,
+              expiresAt: now + GALLERY_RETENTION_MS
+            };
+            galleryImages.value.unshift(image);
+            await persistGalleryImage(image);
+            return image;
+          };
+
+          const taskStatusLabel = (status) => {
+            const map = {
+              queued: "排队",
+              running: "运行中",
+              completed: "完成",
+              failed: "失败",
+              interrupted: "中断"
+            };
+            return map[status] || "未知";
+          };
+
+          const formatDuration = (ms) => {
+            const value = Math.max(0, Number(ms) || 0);
+            if (value < 1000) return "0s";
+            const seconds = Math.round(value / 1000);
+            if (seconds < 60) return `${seconds}s`;
+            const minutes = Math.floor(seconds / 60);
+            return `${minutes}m ${seconds % 60}s`;
+          };
+
+          const formatTaskDuration = (task) => {
+            if (!task) return "0s";
+            const end = task.completedAt || (task.status === "running" ? Date.now() : task.updatedAt || task.createdAt);
+            return formatDuration(Number(end || 0) - Number(task.startedAt || task.createdAt || 0));
+          };
+
+          const getTaskThumbnail = (task) => {
+            const outputId = Array.isArray(task?.outputImageIds) ? task.outputImageIds[0] : "";
+            if (!outputId) return null;
+            return galleryImages.value.find((image) => image.id === outputId) || null;
+          };
+
+          const openTaskImage = (task) => {
+            const image = getTaskThumbnail(task);
+            if (image) previewImage.value = image;
+          };
+
+          const openTopPanel = async (panel) => {
+            activePanel.value = activePanel.value === panel ? "" : panel;
+            if (panel === "gallery") await pruneExpiredGalleryImages();
+          };
+
+          const closeTopPanel = () => {
+            activePanel.value = "";
+          };
+
+          const toggleGallerySelection = () => {
+            gallerySelectionMode.value = !gallerySelectionMode.value;
+            selectedGalleryIds.value = [];
+          };
+
+          const toggleGalleryImageSelection = (image) => {
+            if (!image?.id) return;
+            if (!gallerySelectionMode.value) {
+              previewImage.value = image;
+              return;
+            }
+            selectedGalleryIds.value = selectedGalleryIds.value.includes(image.id)
+              ? selectedGalleryIds.value.filter((id) => id !== image.id)
+              : [...selectedGalleryIds.value, image.id];
+          };
+
+          const deleteSelectedGalleryImages = async () => {
+            const selected = new Set(selectedGalleryIds.value);
+            if (!selected.size) return;
+            galleryImages.value = galleryImages.value.filter((image) => !selected.has(image.id));
+            for (const id of selected) {
+              await localDbDelete("galleryImages", id).catch((error) => {
+                logProcess("gallery_delete_failed", { id, error: error.message });
+              });
+            }
+            selectedGalleryIds.value = [];
+            gallerySelectionMode.value = false;
+          };
+
+          const closePreviewImage = () => {
+            previewImage.value = null;
+          };
+
+          const exportLocalData = () => {
+            const payload = {
+              exportedAt: new Date().toISOString(),
+              tasks: [],
+              galleryImages: galleryImages.value
+            };
+            const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `photo-react-data-${Date.now()}.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+          };
+
+          const clearLocalData = async () => {
+            const ids = [
+              ...tasks.value.map((task) => ({ store: "tasks", id: task.id })),
+              ...galleryImages.value.map((image) => ({ store: "galleryImages", id: image.id }))
+            ];
+            tasks.value = [];
+            galleryImages.value = [];
+            selectedGalleryIds.value = [];
+            gallerySelectionMode.value = false;
+            for (const item of ids) {
+              await localDbDelete(item.store, item.id).catch((error) => {
+                logProcess("local_data_clear_failed", { store: item.store, id: item.id, error: error.message });
+              });
+            }
+            showStatus("本地任务与图库已清空", "ok");
+          };
+
+          const normalizeEndpointPath = (input, fallbackPath = "") => {
+            const raw = String(input || "").trim();
+            if (!raw) return fallbackPath;
+            if (/^https?:\/\//i.test(raw)) return raw;
+            return raw.startsWith("/") ? raw : `/${raw}`;
+          };
+
+          const buildWorkerEndpoint = (path = "") => {
+            const suffix = String(path || "");
+            if (!suffix) return WORKER_API_BASE;
+            return `${WORKER_API_BASE}${suffix.startsWith("/") ? suffix : `/${suffix}`}`;
+          };
+
+          const workerApiRequest = async ({ path, method = "POST", body = null, auth = false }) => {
+            if (auth && !isAuthExpiryValid(authExpiresAt.value)) {
+              clearAuthState();
+              openAuthPanel("login");
+              throw new Error("登录已过期，请重新登录");
+            }
+            if (auth && !authToken.value) {
+              openAuthPanel("login");
+              throw new Error("请先登录后再生成");
+            }
+            const headers = {};
+            if (auth && authToken.value) headers.Authorization = `Bearer ${authToken.value}`;
+            if (body != null && method !== "GET") headers["Content-Type"] = "application/json";
+            let response;
+            try {
+              response = await fetch(buildWorkerEndpoint(path), {
+                method,
+                headers,
+                body: body != null && method !== "GET" ? JSON.stringify(body) : null
+              });
+            } catch (error) {
+              const text = String(error?.message || error || "");
+              if (/failed to fetch|networkerror|network request failed/i.test(text)) {
+                throw new Error("Cloudflare 后端请求失败：网络或 CORS 受限，请确认 Worker 允许 http://localhost:5173");
+              }
+              throw new Error(`Cloudflare 后端请求失败：${text || "未知网络错误"}`);
+            }
+
+            const text = await response.text();
+            let parsed = null;
+            try {
+              parsed = text ? JSON.parse(text) : {};
+            } catch (error) {
+              parsed = { raw: text };
+            }
+
+            if (!response.ok || parsed?.ok === false) {
+              const detail = parsed?.error?.message || parsed?.error || parsed?.message || parsed?.raw || response.statusText;
+              const billingBalance = parsed?.billing?.balance ?? parsed?.details?.billing?.balance;
+              const requestId = parsed?.requestId || parsed?.billing?.requestId || parsed?.details?.billing?.requestId || "";
+              if (Number.isFinite(Number(billingBalance))) {
+                credits.value = { ...(credits.value || {}), balance: Number(billingBalance) };
+                persistAuthState({ credits: credits.value });
+              }
+              if (auth && (response.status === 401 || response.status === 403)) {
+                clearAuthState();
+                openAuthPanel("login");
+                throw new Error("登录已过期，请重新登录");
+              }
+              if (auth && response.status === 402) {
+                openAuthPanel("redeem");
+                throw new Error("算力值不足，请兑换后再生成");
+              }
+              const requestSuffix = requestId ? `（请求ID：${requestId}）` : "";
+              throw new Error(`后端 ${response.status}：${detail}${requestSuffix}`);
+            }
+            return parsed;
+          };
+
+          const refreshCredits = async () => {
+            if (!authToken.value) return null;
+            const data = await workerApiRequest({ path: "/credits", method: "GET", auth: true });
+            credits.value = data?.credits || { balance: 0 };
+            persistAuthState({ credits: credits.value });
+            return credits.value;
+          };
+
+          const restoreAuthSession = async () => {
+            loadStoredAuthState();
+            if (!authToken.value) return;
+            try {
+              const data = await workerApiRequest({ path: "/auth/me", method: "GET", auth: true });
+              persistAuthState({
+                user: data.user,
+                credits: data.credits || { balance: 0 }
+              });
+            } catch (error) {
+              logProcess("auth_restore_failed", { error: error.message || String(error) });
+              closeAuthPanel();
+            }
+          };
+
+          const loginUser = async () => {
+            authError.value = "";
+            const username = String(authForm.username || "").trim();
+            const password = String(authForm.password || "");
+            if (!username || !password) {
+              authError.value = "请输入账号和密码。";
+              return;
+            }
+            authBusy.value = true;
+            try {
+              const data = await workerApiRequest({
+                path: "/auth/login",
+                body: { username, password }
+              });
+              persistAuthState(data);
+              resetAuthForm();
+              closeAuthPanel();
+              showStatus("登录成功", "ok");
+            } catch (error) {
+              authError.value = error.message || String(error);
+            } finally {
+              authBusy.value = false;
+            }
+          };
+
+          const registerUser = async () => {
+            authError.value = "";
+            const username = String(authForm.username || "").trim();
+            const password = String(authForm.password || "");
+            const confirmPassword = String(authForm.confirmPassword || "");
+            if (!username || !password) {
+              authError.value = "请输入账号和密码。";
+              return;
+            }
+            if (password !== confirmPassword) {
+              authError.value = "两次输入的密码不一致。";
+              return;
+            }
+            authBusy.value = true;
+            try {
+              const data = await workerApiRequest({
+                path: "/auth/register",
+                body: { username, password, displayName: username }
+              });
+              persistAuthState(data);
+              resetAuthForm();
+              closeAuthPanel();
+              showStatus("注册成功，已自动登录", "ok");
+            } catch (error) {
+              authError.value = error.message || String(error);
+            } finally {
+              authBusy.value = false;
+            }
+          };
+
+          const logoutUser = async () => {
+            try {
+              if (authToken.value) {
+                await workerApiRequest({ path: "/auth/logout", body: {}, auth: true });
+              }
+            } catch (error) {
+              logProcess("logout_request_failed", { error: error.message || String(error) });
+            } finally {
+              clearAuthState();
+              closeAuthPanel();
+              showStatus("已退出登录", "ok");
+            }
+          };
+
+          const redeemCredits = async () => {
+            authError.value = "";
+            if (!isLoggedIn.value) {
+              authError.value = "请先登录后再兑换。";
+              return;
+            }
+            const code = String(redeemCode.value || "").trim();
+            if (!code) {
+              authError.value = "请输入兑换码。";
+              return;
+            }
+            redeemBusy.value = true;
+            try {
+              const data = await workerApiRequest({
+                path: "/redeem",
+                body: { code },
+                auth: true
+              });
+              credits.value = data?.credits || credits.value;
+              persistAuthState({ credits: credits.value });
+              redeemCode.value = "";
+              closeAuthPanel();
+              showStatus(`兑换成功，增加 ${data?.added || 0} 点算力值`, "ok");
+            } catch (error) {
+              authError.value = error.message || String(error);
+            } finally {
+              redeemBusy.value = false;
+            }
+          };
+
+          const formatPromptGalleryBytes = (value) => {
+            const bytes = Number(value);
+            if (!Number.isFinite(bytes) || bytes <= 0) return "未知";
+            const units = ["B", "KB", "MB", "GB"];
+            let size = bytes;
+            let unitIndex = 0;
+            while (size >= 1024 && unitIndex < units.length - 1) {
+              size /= 1024;
+              unitIndex += 1;
+            }
+            const precision = size >= 10 || unitIndex === 0 ? 0 : 1;
+            return `${size.toFixed(precision)} ${units[unitIndex]}`;
+          };
+
+          const getPromptGalleryRatioLabel = (width, height) => {
+            const safeWidth = Number(width) || 0;
+            const safeHeight = Number(height) || 0;
+            if (safeWidth <= 0 || safeHeight <= 0) return "未知比例";
+            const gcd = (a, b) => (b ? gcd(b, a % b) : a);
+            const divisor = gcd(Math.round(safeWidth), Math.round(safeHeight));
+            return `${Math.round(safeWidth / divisor)}:${Math.round(safeHeight / divisor)}`;
+          };
+
+          const normalizePromptGalleryItem = (item, index) => {
+            const category = String(item?.category || "Prompt Gallery").replace(/\s+Cases$/i, "");
+            const imagePath = String(item?.image || "").replace(/\\/g, "/");
+            const width = Number(item?.width) || 800;
+            const height = Number(item?.height) || 1000;
+            return {
+              id: String(item?.id || `gallery_${index}`),
+              title: String(item?.title || `Prompt ${index + 1}`),
+              categoryLabel: category,
+              prompt: String(item?.prompt || ""),
+              imageSrc: imagePath ? `./prompt-gallery/${imagePath}` : "",
+              width,
+              height,
+              bytes: Number(item?.bytes) || 0,
+              bytesLabel: formatPromptGalleryBytes(item?.bytes),
+              aspectRatioLabel: getPromptGalleryRatioLabel(width, height)
+            };
+          };
+
+          const hashPromptCardId = (value) => {
+            const source = String(value || "");
+            let hash = 0;
+            for (let i = 0; i < source.length; i += 1) {
+              hash = (hash * 31 + source.charCodeAt(i)) >>> 0;
+            }
+            return hash;
+          };
+
+          const resolvePromptCardLayoutClass = (item, index) => {
+            const safeWidth = Math.max(1, Number(item?.width) || 1);
+            const safeHeight = Math.max(1, Number(item?.height) || 1);
+            const ratio = safeWidth / safeHeight;
+            const seed = hashPromptCardId(`${item?.id || "card"}_${index}`);
+            if (ratio >= 1.65) return "layout-wide";
+            if (ratio >= 1.18) return seed % 5 === 0 ? "layout-feature" : "layout-landscape";
+            if (ratio <= 0.68) return seed % 6 === 0 ? "layout-tall" : "layout-portrait";
+            if (ratio <= 0.84) return "layout-portrait";
+            return seed % 7 === 0 ? "layout-feature" : "layout-square";
+          };
+
+          const pickPromptGalleryItems = (items) => {
+            const pool = items
+              .map(normalizePromptGalleryItem)
+              .filter((item) => item.imageSrc && item.prompt);
+            for (let index = pool.length - 1; index > 0; index -= 1) {
+              const randomIndex = Math.floor(Math.random() * (index + 1));
+              [pool[index], pool[randomIndex]] = [pool[randomIndex], pool[index]];
+            }
+            return pool;
+          };
+
+          const appendPromptGalleryBatch = () => {
+            if (!promptGalleryPool.value.length) return;
+            const start = promptGalleryRenderedCount.value;
+            const nextItems = [];
+            for (let offset = 0; offset < PROMPT_GALLERY_BATCH_SIZE; offset += 1) {
+              const poolIndex = (start + offset) % promptGalleryPool.value.length;
+              const source = promptGalleryPool.value[poolIndex];
+              nextItems.push({
+                ...source,
+                id: `${source.id}_${start + offset}`
+              });
+            }
+            promptGalleryItems.value = [...promptGalleryItems.value, ...nextItems];
+            promptGalleryRenderedCount.value = start + nextItems.length;
+          };
+
+          const loadPromptGallery = async () => {
+            let source = window.PHOTO_REACT_PROMPT_GALLERY || null;
+            if (!source) {
+              try {
+                const response = await fetch(PROMPT_GALLERY_JSON_URL, { cache: "no-cache" });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                source = await response.json();
+              } catch (error) {
+                logProcess("prompt_gallery_load_failed", { error: error.message || String(error) });
+                source = null;
+              }
+            }
+            const items = Array.isArray(source?.items) ? source.items : [];
+            promptGalleryTotal.value = Number(source?.totalItems) || items.length;
+            promptGalleryPool.value = pickPromptGalleryItems(items);
+            promptGalleryItems.value = [];
+            promptGalleryRenderedCount.value = 0;
+            appendPromptGalleryBatch();
+            appendPromptGalleryBatch();
+          };
+
+          const openPromptGalleryPreview = (item) => {
+            if (!item) return;
+            promptPreviewItem.value = item;
+          };
+
+          const closePromptGalleryPreview = () => {
+            promptPreviewItem.value = null;
+          };
+
+          const copyPromptGalleryPrompt = async (item) => {
+            const prompt = String(item?.prompt || "");
+            if (!prompt) {
+              showStatus("这个案例没有可复制的提示词", "error");
+              return;
+            }
+            const copyWithTextarea = () => {
+              const textarea = document.createElement("textarea");
+              textarea.value = prompt;
+              textarea.setAttribute("readonly", "");
+              textarea.style.position = "fixed";
+              textarea.style.left = "-9999px";
+              document.body.appendChild(textarea);
+              textarea.select();
+              try {
+                if (!document.execCommand("copy")) throw new Error("copy command failed");
+              } finally {
+                document.body.removeChild(textarea);
+              }
+            };
+            try {
+              if (navigator.clipboard?.writeText) {
+                try {
+                  await navigator.clipboard.writeText(prompt);
+                } catch (error) {
+                  copyWithTextarea();
+                }
+              } else {
+                copyWithTextarea();
+              }
+              showStatus("提示词已复制，请手动粘贴到输入框", "ok");
+            } catch (error) {
+              showStatus("复制失败，请手动选中提示词复制", "error");
+            }
+          };
+
+          const getPromptGalleryScrollRoot = () => {
+            const appRoot = document.querySelector(".app");
+            if (appRoot && appRoot.scrollHeight > appRoot.clientHeight + 1) return appRoot;
+            return document.scrollingElement || document.documentElement;
+          };
+
+          const maybeAppendPromptGalleryOnScroll = () => {
+            const root = getPromptGalleryScrollRoot();
+            const scrollTop = root.scrollTop;
+            const viewportHeight = root.clientHeight;
+            const scrollHeight = root.scrollHeight;
+            if (scrollTop + viewportHeight >= scrollHeight - 900) {
+              appendPromptGalleryBatch();
+            }
+          };
+          let promptGalleryScrollTimer = null;
+
+          const collapseChatDuringGalleryScroll = () => {
+            isChatCollapsed.value = true;
+            ratioMenuOpen.value = false;
+            if (chatCollapseTimer) window.clearTimeout(chatCollapseTimer);
+            chatCollapseTimer = window.setTimeout(() => {
+              isChatCollapsed.value = false;
+              chatCollapseTimer = null;
+            }, 520);
+          };
+
+          const handlePromptGalleryScroll = () => {
+            collapseChatDuringGalleryScroll();
+            if (promptGalleryScrollTimer) return;
+            promptGalleryScrollTimer = window.setTimeout(() => {
+              promptGalleryScrollTimer = null;
+              maybeAppendPromptGalleryOnScroll();
+            }, 120);
+          };
+
+          const handlePromptGalleryWheel = (event) => {
+            collapseChatDuringGalleryScroll();
+            const target = event.currentTarget;
+            if (!target || target.scrollWidth <= target.clientWidth) return;
+            const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+            if (!delta) return;
+            target.scrollLeft += delta;
+            event.preventDefault();
+          };
+
+          const triggerImageUpload = () => {
+            imageInput.value && imageInput.value.click();
+          };
+
+          const apiRequest = async ({ body = null }) => {
+            const payload = body && typeof body === "object"
+              ? { ...body, taskId: activeTaskId.value || undefined }
+              : body;
+            return workerApiRequest({
+              path: "/ai/generate",
+              method: "POST",
+              body: payload,
+              auth: true
+            });
+          };
+
+          const uploadProxyRequest = async ({ path, method = "POST", body = null, isForm = false }) => {
+            if (!isAuthExpiryValid(authExpiresAt.value)) {
+              clearAuthState();
+              openAuthPanel("login");
+              throw new Error("登录已过期，请重新登录后上传参考图");
+            }
+            if (!authToken.value) {
+              openAuthPanel("login");
+              throw new Error("请先登录后再上传参考图");
+            }
+            const url = buildWorkerEndpoint(path);
+            const headers = { Authorization: `Bearer ${authToken.value}` };
+            if (!isForm && body != null && method !== "GET") {
+              headers["Content-Type"] = "application/json";
+            }
+
+            let response;
+            try {
+              response = await fetch(url, {
+                method,
+                headers,
+                body: body ? (isForm ? body : JSON.stringify(body)) : null
+              });
+            } catch (error) {
+              const text = String(error?.message || error || "");
+              if (/failed to fetch|networkerror|network request failed/i.test(text)) {
+                throw new Error("上传代理请求失败：网络或 CORS 受限，请确认 Worker 允许 http://localhost:5173");
+              }
+              throw new Error(`上传代理请求失败：${text || "未知网络错误"}`);
+            }
+
+            const text = await response.text();
+            let parsed = null;
+            try {
+              parsed = text ? JSON.parse(text) : {};
+            } catch (error) {
+              parsed = { raw: text };
+            }
+            if (!response.ok || parsed?.ok === false) {
+              const detail = parsed?.error?.message || parsed?.error || parsed?.message || parsed?.raw || response.statusText;
+              if (response.status === 401 || response.status === 403) {
+                clearAuthState();
+                openAuthPanel("login");
+                throw new Error("登录已过期，请重新登录后上传参考图");
+              }
+              throw new Error(`上传代理 ${response.status}：${detail}`);
+            }
+            return parsed;
+          };
+
+          const createImageReferencePayload = async (file, label = "参考图") => {
+            if (!file) return null;
+            const form = new FormData();
+            form.append("image", file, file.name || `reference_${Date.now()}.png`);
+            form.append("purpose", label.includes("蒙版") ? "mask" : "reference");
+            pushOutputMessage(`${label}：正在上传到 Cloudflare R2 临时图床`);
+            const data = await uploadProxyRequest({
+              path: "/upload",
+              body: form,
+              isForm: true
+            });
+            const url = String(data?.url || data?.image_url || data?.imageUrl || "").trim();
+            if (!/^https?:\/\//i.test(url)) {
+              throw new Error("上传代理未返回有效公网图片 URL");
+            }
+            const payload = {
+              url,
+              dataUrl: url,
+              mimeType: file.type || "image/png",
+              name: file.name || `reference_${Date.now()}.png`,
+              key: String(data?.key || "").trim(),
+              cleanupToken: String(data?.cleanupToken || data?.key || "").trim(),
+              provider: String(data?.provider || "cloudflare-r2").trim()
+            };
+            pushOutputMessage(`${label}：公网 URL 已就绪（${payload.provider}）`);
+            return payload;
+          };
+
+          const cleanupHostedImages = async (hostedImages = []) => {
+            const unique = [];
+            const seen = new Set();
+            hostedImages.filter(Boolean).forEach((item) => {
+              const cleanupToken = String(item.cleanupToken || item.key || "").trim();
+              if (!cleanupToken || seen.has(cleanupToken)) return;
+              seen.add(cleanupToken);
+              unique.push({ cleanupToken, key: item.key || "" });
+            });
+            for (const item of unique) {
+              try {
+                await uploadProxyRequest({
+                  path: "/delete",
+                  body: {
+                    cleanupToken: item.cleanupToken,
+                    key: item.key
+                  }
+                });
+              } catch (error) {
+                pushOutputMessage(`临时图清理失败：${error.message}`, "error");
+              }
+            }
+          };
+
+          const fileToDataUrl = (file) => {
+            return new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result);
+              reader.onerror = () => reject(reader.error);
+              reader.readAsDataURL(file);
+            });
+          };
+
+          const blobToDataUrl = (blob) => {
+            return new Promise((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result);
+              reader.onerror = () => reject(reader.error);
+              reader.readAsDataURL(blob);
+            });
+          };
+
+          const loadImageFromFile = async (file) => {
+            const url = URL.createObjectURL(file);
+            try {
+              const image = await new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = reject;
+                img.src = url;
+              });
+              return image;
+            } finally {
+              URL.revokeObjectURL(url);
+            }
+          };
+
+          const dataUrlToBlob = async (dataUrl) => {
+            const response = await fetch(dataUrl);
+            return response.blob();
+          };
+
+          const canvasToPngFile = async (canvas, name) => {
+            const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+            if (!blob) throw new Error("图片画布导出失败");
+            return new File([blob], name, { type: "image/png" });
+          };
+
+          const addAttachment = async ({ name, blob, dataUrl, source = "upload", maskDataUrl = "" }) => {
+            const resolvedDataUrl = dataUrl || (blob ? await blobToDataUrl(blob) : "");
+            const item = {
+              id: `${Date.now()}_${Math.random().toString(16).slice(2)}`,
+              name: name || "image.png",
+              dataUrl: resolvedDataUrl,
+              source,
+              maskDataUrl
+            };
+            attachments.value.push(item);
+            return item;
+          };
+
+          const removeAttachment = (id) => {
+            attachments.value = attachments.value.filter((item) => item.id !== id);
+            selectedImageFile.value = null;
+          };
+
+          const handleUpload = async (event) => {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+            selectedImageFile.value = file;
+            await addAttachment({ name: file.name, blob: file, source: "upload" });
+            showStatus("已上传图片，可进行比例调整或编辑", "ok");
+            pushOutputMessage(`已上传图片：${file.name}`);
+            event.target.value = "";
+          };
+
+          const attachmentItemToFile = async (item) => {
+            if (!item?.dataUrl) return null;
+            const blob = await dataUrlToBlob(item.dataUrl);
+            const name = item.name || `attachment_${Date.now()}.png`;
+            const type = blob.type || "image/png";
+            return new File([blob], name, { type });
+          };
+
+          const findReferenceFile = async () => {
+            if (!attachments.value.length) return null;
+            if (selectedImageFile.value) return selectedImageFile.value;
+            return attachmentItemToFile(attachments.value[attachments.value.length - 1]);
+          };
+
+          const parseRatioFromText = (text) => {
+            const source = String(text || "");
+            const match = source.match(/(\d{1,3})\s*[:：xX/]\s*(\d{1,3})/);
+            if (!match) return null;
+            const left = Number(match[1]);
+            const right = Number(match[2]);
+            if (!left || !right) return null;
+            const ratioValue = left / right;
+            const normalizedLabel = `${left}:${right}`;
+            return {
+              label: normalizedLabel,
+              value: ratioValue,
+              source: "text-explicit"
+            };
+          };
+
+          const inferAutoRatioFromPrompt = (text) => {
+            const input = String(text || "").toLowerCase();
+            if (!input) return null;
+            const squareTokens = ["头像", "logo", "图标", "icon", "avatar", "方形", "square"];
+            const portraitTokens = ["人像", "竖版", "手机壁纸", "海报", "全身", "story", "竖图"];
+            const landscapeTokens = ["壁纸", "风景", "横版", "横图", "banner", "封面", "电影", "panorama", "landscape"];
+            if (squareTokens.some((token) => input.includes(token))) {
+              return { label: "1:1", value: 1, source: "auto-square" };
+            }
+            if (portraitTokens.some((token) => input.includes(token))) {
+              return { label: "9:16", value: 9 / 16, source: "auto-portrait" };
+            }
+            if (landscapeTokens.some((token) => input.includes(token))) {
+              return { label: "16:9", value: 16 / 9, source: "auto-landscape" };
+            }
+            return null;
+          };
+
+          const resolveAspectRatio = async ({ promptText, referenceFile, controlSignals = null }) => {
+            const signals = controlSignals || analyzePromptControlSignals(promptText);
+            if (referenceFile && signals.keepAspectRatioUnchanged) {
+              const image = await loadImageFromFile(referenceFile);
+              return {
+                label: "锁定原图比例",
+                value: image.width / image.height,
+                source: "locked-source-image",
+                shouldApplyToReference: false
+              };
+            }
+            const explicit = parseRatioFromText(promptText);
+            if (explicit) return { ...explicit, shouldApplyToReference: true };
+
+            const uiRatio = getEffectiveSelectedRatio();
+            if (uiRatio.value) {
+              return {
+                label: uiRatio.label,
+                value: uiRatio.value,
+                source: "ui-fixed",
+                shouldApplyToReference: true
+              };
+            }
+
+            if (referenceFile) {
+              const image = await loadImageFromFile(referenceFile);
+              return {
+                label: "Auto(原图)",
+                value: image.width / image.height,
+                source: "auto-source-image",
+                shouldApplyToReference: false
+              };
+            }
+
+            return {
+              label: "4:3",
+              value: 4 / 3,
+              source: "auto-fallback",
+              shouldApplyToReference: true
+            };
+          };
+
+          const getSelectedFixedRatio = () => {
+            const ratioItem = getEffectiveSelectedRatio();
+            return ratioItem?.value ? ratioItem : null;
+          };
+
+          const canResolveWithLocalCrop = async (file, targetRatio) => {
+            const image = await loadImageFromFile(file);
+            const sourceRatio = image.width / image.height;
+            const epsilon = 0.0001;
+            return Math.abs(sourceRatio - targetRatio) <= epsilon || sourceRatio > targetRatio;
+          };
+
+          const resolveReferenceOnlyAutoPrompt = async ({ promptText, referenceFile, ratioInfo, controlSignals = null }) => {
+            if (String(promptText || "").trim() || !referenceFile) {
+              return { promptText, ratioInfo, autoPrompt: "" };
+            }
+
+            const fixedRatio = getSelectedFixedRatio();
+            const strongFidelityMode = Boolean(controlSignals?.strongFidelityMode);
+            const shouldRedraw = getEffectiveKeepStyle() && !strongFidelityMode;
+            if (fixedRatio) {
+              if (shouldRedraw) {
+                const autoPrompt = `将上传的图片变为${fixedRatio.label}并重绘`;
+                return {
+                  promptText: autoPrompt,
+                  ratioInfo: { ...ratioInfo, shouldApplyToReference: false },
+                  autoPrompt
+                };
+              }
+
+              const canCrop = await canResolveWithLocalCrop(referenceFile, fixedRatio.value);
+              if (!canCrop) {
+                const autoPrompt = `将上传的图片变为${fixedRatio.label}`;
+                return {
+                  promptText: autoPrompt,
+                  ratioInfo: { ...ratioInfo, shouldApplyToReference: false },
+                  autoPrompt
+                };
+              }
+
+              return { promptText, ratioInfo, autoPrompt: "" };
+            }
+
+            if (shouldRedraw) {
+              const autoPrompt = "将当前图片按默认比例重绘";
+              return {
+                promptText: autoPrompt,
+                ratioInfo: { ...ratioInfo, shouldApplyToReference: false },
+                autoPrompt
+              };
+            }
+
+            return {
+              promptText,
+              ratioInfo,
+              autoPrompt: "",
+              error: "没有选择更改目标，请重试！"
+            };
+          };
+
+          const resolvePromptRatioInstruction = ({ promptText, ratioInfo, controlSignals = null }) => {
+            const cleanPrompt = String(promptText || "").trim();
+            if (!cleanPrompt) return { promptText, instruction: "" };
+            if (controlSignals?.keepAspectRatioUnchanged) {
+              return { promptText: cleanPrompt, instruction: "" };
+            }
+            if (parseRatioFromText(cleanPrompt)) return { promptText: cleanPrompt, instruction: "" };
+            const fixedRatio = getSelectedFixedRatio();
+            if (!fixedRatio || ratioInfo?.source !== "ui-fixed") {
+              return { promptText: cleanPrompt, instruction: "" };
+            }
+            const instruction = `将图片比例输出为${fixedRatio.label}`;
+            if (cleanPrompt.includes(instruction)) {
+              return { promptText: cleanPrompt, instruction: "" };
+            }
+            return {
+              promptText: `${cleanPrompt}\n${instruction}`,
+              instruction
+            };
+          };
+
+          const buildImagePrompt = ({ userText, ratioInfo, hasReference, strongFidelityMode = false }) => {
+            const promptText = String(userText || "").trim();
+            const userIntent = promptText || "未提供文本，请基于参考图完成高质量创作。";
+            const referenceInstruction = hasReference
+              ? (strongFidelityMode
+                ? "[保真约束]\n保持参考图主体身份、脸部结构、发型、服饰、材质、光照、色调、镜头语言与构图关系一致；除非用户明确要求，不重绘整体风格，不替换主体，不改变主要场景元素。"
+                : "[参考图约束]\n必须以上传图片作为主要视觉参考，保留主体、构图关系、关键物体、材质、色调和场景特征；只根据用户意图做必要修改，不要脱离参考图重新创作。")
+              : "";
+            return [
+              IMAGE_WORKFLOW_SYSTEM_PROMPT,
+              "",
+              `[当前模式] ${hasReference ? "参考图生成" : "纯文本生成"}`,
+              `[Aspect Ratio] ${ratioInfo?.label || "Auto"}`,
+              referenceInstruction,
+              "[用户意图]",
+              userIntent
+            ].filter(Boolean).join("\n");
+          };
+
+          const snapshotComposerAttachments = () => attachments.value.map((item) => ({
+            id: item.id,
+            name: item.name,
+            dataUrl: item.dataUrl,
+            source: item.source,
+            maskDataUrl: item.maskDataUrl || ""
+          }));
+
+          const findReferenceFileForTask = async (task) => {
+            const items = Array.isArray(task?.attachmentsSnapshot) ? task.attachmentsSnapshot : [];
+            if (!items.length) return null;
+            return attachmentItemToFile(items[items.length - 1]);
+          };
+
+          const resetComposerAfterSubmit = () => {
+            chatInput.value = "";
+            attachments.value = [];
+            selectedImageFile.value = null;
+          };
+
+          const handleSubmitBlocked = () => {
+            if (!isLoggedIn.value) {
+              openAuthPanel("login");
+              showStatus("请先登录后再生成", "error");
+              return true;
+            }
+            if (!hasEnoughCredits.value) {
+              openAuthPanel("redeem");
+              showStatus(`算力值不足，本次需要 ${requiredCreditsForComposer.value} 点`, "error");
+              return true;
+            }
+            if (!hasQueueCapacity.value) {
+              showStatus(`最多同时挂载 ${MAX_ACTIVE_TASKS} 个生成任务，请等待当前队列完成`, "error");
+              return true;
+            }
+            return false;
+          };
+
+          const createGenerationTaskFromComposer = () => {
+            if (handleSubmitBlocked()) {
+              return null;
+            }
+            const promptText = chatInput.value.trim();
+            const attachmentsSnapshot = snapshotComposerAttachments();
+            if (!promptText && !attachmentsSnapshot.length) {
+              showStatus("请选择目标意图！", "error");
+              return null;
+            }
+            const requiredCredits = attachmentsSnapshot.length ? REFERENCE_IMAGE_CREDIT_COST : TEXT_IMAGE_CREDIT_COST;
+            if (creditBalance.value < requiredCredits) {
+              openAuthPanel("redeem");
+              showStatus(`算力值不足，本次需要 ${requiredCredits} 点`, "error");
+              return null;
+            }
+            const ratioSnapshot = getEffectiveSelectedRatio();
+            const now = Date.now();
+            return {
+              id: createLocalId("task"),
+              status: "queued",
+              prompt: promptText || "参考图生成",
+              originalPrompt: promptText,
+              model: DEFAULT_IMAGE_MODEL,
+              ratioLabel: ratioSnapshot?.label || currentRatioLabel.value || "Auto",
+              selectedRatio: ratioSnapshot ? { ...ratioSnapshot } : { ...ratioOptions[0] },
+              keepStyle: Boolean(keepStyle.value),
+              attachmentsSnapshot,
+              inputImageCount: attachmentsSnapshot.length,
+              estimatedCost: requiredCredits,
+              outputImageIds: [],
+              logs: [],
+              createdAt: now,
+              updatedAt: now
+            };
+          };
+
+          const executeQueuedTask = async (task) => {
+            generationContext = {
+              keepStyle: Boolean(task.keepStyle),
+              selectedRatio: task.selectedRatio || ratioOptions[0]
+            };
+            activeTaskId.value = task.id;
+            outputMessages.value = [];
+            latestOutput.value = null;
+            sending.value = true;
+
+            const originalPromptText = String(task.originalPrompt || task.prompt || "").trim();
+            let promptText = originalPromptText;
+            let referenceFile = null;
+            const promptControlSignals = analyzePromptControlSignals(originalPromptText);
+            const startedAt = Date.now();
+
+            try {
+              referenceFile = await findReferenceFileForTask(task);
+              await upsertTask({
+                id: task.id,
+                status: "running",
+                startedAt,
+                model: DEFAULT_IMAGE_MODEL
+              });
+
+              if (referenceFile && promptControlSignals.strongFidelityMode) {
+                pushOutputMessage("已识别保真关键词：启用强保真编辑模式", "system");
+                if (generationContext.keepStyle) {
+                  pushOutputMessage("强保真模式下将抑制自动重绘分支，优先保持参考图一致性", "system");
+                }
+              }
+              if (referenceFile && promptControlSignals.keepAspectRatioUnchanged) {
+                pushOutputMessage("已识别比例关键词：锁定参考图原始比例", "system");
+              }
+
+              let ratioInfo = await resolveAspectRatio({ promptText, referenceFile, controlSignals: promptControlSignals });
+              const autoPromptPlan = await resolveReferenceOnlyAutoPrompt({
+                promptText,
+                referenceFile,
+                ratioInfo,
+                controlSignals: promptControlSignals
+              });
+              if (autoPromptPlan.error) {
+                throw new Error(autoPromptPlan.error);
+              }
+              promptText = autoPromptPlan.promptText;
+              ratioInfo = autoPromptPlan.ratioInfo;
+              if (autoPromptPlan.autoPrompt) {
+                pushOutputMessage(`已自动生成指令：${autoPromptPlan.autoPrompt}`);
+              }
+
+              const ratioPromptPlan = resolvePromptRatioInstruction({
+                promptText,
+                ratioInfo,
+                controlSignals: promptControlSignals
+              });
+              promptText = ratioPromptPlan.promptText;
+              if (ratioPromptPlan.instruction) {
+                pushOutputMessage(`已追加比例指令：${ratioPromptPlan.instruction}`);
+              }
+
+              await upsertTask({
+                id: task.id,
+                prompt: promptText || task.prompt,
+                ratioLabel: ratioInfo.label
+              });
+              pushOutputMessage(promptText || "已上传参考图，请根据当前设置生成图片。", "normal", "user");
+              pushOutputMessage("开始生成图片...", "system");
+              pushOutputMessage(`Aspect Ratio：${ratioInfo.label}`, "system");
+
+              const generated = referenceFile
+                ? await generateWithReference({ promptText, referenceFile, ratioInfo, controlSignals: promptControlSignals })
+                : await generateFromText({ promptText, ratioInfo });
+
+              if (!generated?.dataUrl) {
+                throw new Error("生成结果为空，请重试");
+              }
+              latestOutput.value = {
+                dataUrl: generated.dataUrl,
+                fileName: generated.fileName || `image_${Date.now()}.png`
+              };
+              const storedImage = await addGalleryImage({
+                dataUrl: latestOutput.value.dataUrl,
+                fileName: latestOutput.value.fileName,
+                prompt: promptText || task.prompt,
+                taskId: task.id,
+                model: DEFAULT_IMAGE_MODEL,
+                ratio: ratioInfo.label
+              });
+              await upsertTask({
+                id: task.id,
+                status: "completed",
+                outputImageIds: [storedImage.id],
+                completedAt: Date.now(),
+                durationMs: Date.now() - startedAt
+              });
+              await refreshCredits().catch((error) => {
+                logProcess("credits_refresh_after_success_failed", { error: error.message || String(error) });
+              });
+              showStatus(`任务完成：${latestOutput.value.fileName}`, "ok");
+              pushOutputMessage(`生成完成：${latestOutput.value.fileName}`);
+              logProcess("image_generation_completed", {
+                taskId: task.id,
+                mode: generated.mode,
+                ratio: ratioInfo.label,
+                fileName: latestOutput.value.fileName
+              });
+            } catch (error) {
+              await upsertTask({
+                id: task.id,
+                status: "failed",
+                error: error.message || String(error),
+                completedAt: Date.now(),
+                durationMs: Date.now() - startedAt
+              });
+              showStatus(error.message || String(error), "error");
+              pushOutputMessage(`生成失败：${error.message || String(error)}`, "error");
+              logProcess("send_flow_failed", { taskId: task.id, error: error.message || String(error) });
+              await refreshCredits().catch((refreshError) => {
+                logProcess("credits_refresh_after_failure_failed", { error: refreshError.message || String(refreshError) });
+              });
+            } finally {
+              sending.value = false;
+              activeTaskId.value = "";
+              generationContext = null;
+            }
+          };
+
+          const runTaskQueue = async () => {
+            if (taskQueueRunning) return;
+            taskQueueRunning = true;
+            try {
+              while (true) {
+                const nextTask = [...tasks.value]
+                  .filter((task) => task.status === "queued")
+                  .sort((a, b) => Number(a.createdAt || 0) - Number(b.createdAt || 0))[0];
+                if (!nextTask) break;
+                await executeQueuedTask(nextTask);
+              }
+            } finally {
+              taskQueueRunning = false;
+            }
+          };
+
+          const sendMessage = async () => {
+            const task = createGenerationTaskFromComposer();
+            if (!task) return;
+            activePanel.value = "tasks";
+            await upsertTask(task);
+            resetComposerAfterSubmit();
+            showStatus(`已加入任务队列（${Math.min(runningTaskCount.value, MAX_ACTIVE_TASKS)}/${MAX_ACTIVE_TASKS}）`, "ok");
+            runTaskQueue().catch((error) => {
+              logProcess("task_queue_failed", { error: error.message || String(error) });
+            });
+          };
+          const computeTargetSize = (width, height, targetRatio) => {
+            const sourceRatio = width / height;
+            let targetWidth = width;
+            let targetHeight = height;
+            if (sourceRatio < targetRatio) {
+              targetWidth = Math.round(height * targetRatio);
+              targetHeight = height;
+            } else {
+              targetWidth = width;
+              targetHeight = Math.round(width / targetRatio);
+            }
+            const maxEdge = 1536;
+            const maxCurrent = Math.max(targetWidth, targetHeight);
+            if (maxCurrent > maxEdge) {
+              const scale = maxEdge / maxCurrent;
+              targetWidth = Math.max(64, Math.round(targetWidth * scale));
+              targetHeight = Math.max(64, Math.round(targetHeight * scale));
+            }
+            return { targetWidth, targetHeight };
+          };
+
+          const computeGenerationSizeByRatio = (targetRatio) => {
+            const safeRatio = clamp(Number(targetRatio) || 1, 0.25, 4);
+            let best = SUPPORTED_IMAGE_SIZES[0];
+            let bestDiff = Number.POSITIVE_INFINITY;
+            for (const item of SUPPORTED_IMAGE_SIZES) {
+              const diff = Math.abs((item.ratio || 1) - safeRatio);
+              if (diff < bestDiff) {
+                best = item;
+                bestDiff = diff;
+              }
+            }
+            return { width: best.width, height: best.height, label: `${best.width}x${best.height}` };
+          };
+
+          const ensureEditablePngFile = async (file) => {
+            const image = await loadImageFromFile(file);
+            const size = 1024;
+            const canvas = document.createElement("canvas");
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext("2d");
+            ctx.clearRect(0, 0, size, size);
+            ctx.fillStyle = "rgba(0,0,0,0)";
+            ctx.fillRect(0, 0, size, size);
+
+            const imageRatio = image.width / image.height;
+            const canvasRatio = 1;
+            let drawW = size;
+            let drawH = size;
+            if (imageRatio > canvasRatio) {
+              drawH = Math.round(size / imageRatio);
+            } else if (imageRatio < canvasRatio) {
+              drawW = Math.round(size * imageRatio);
+            }
+            const dx = Math.round((size - drawW) / 2);
+            const dy = Math.round((size - drawH) / 2);
+            ctx.drawImage(image, dx, dy, drawW, drawH);
+
+            const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+            if (!blob) throw new Error("图片预处理失败");
+            const normalizedName = String(file?.name || "image.png").replace(/\.[^.]+$/, "") + ".png";
+            return new File([blob], normalizedName, { type: "image/png" });
+          };
+
+          const createOutpaintEditFiles = async (file, targetRatio) => {
+            const image = await loadImageFromFile(file);
+            const { width: canvasWidth, height: canvasHeight } = computeGenerationSizeByRatio(targetRatio || 1);
+            const canvas = document.createElement("canvas");
+            canvas.width = canvasWidth;
+            canvas.height = canvasHeight;
+            const ctx = canvas.getContext("2d");
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+
+            const imageRatio = image.width / image.height;
+            const canvasRatio = canvasWidth / canvasHeight;
+            let drawW = canvasWidth;
+            let drawH = canvasHeight;
+            if (imageRatio > canvasRatio) {
+              drawH = Math.round(canvasWidth / imageRatio);
+            } else if (imageRatio < canvasRatio) {
+              drawW = Math.round(canvasHeight * imageRatio);
+            }
+            const dx = Math.round((canvasWidth - drawW) / 2);
+            const dy = Math.round((canvasHeight - drawH) / 2);
+            ctx.drawImage(image, dx, dy, drawW, drawH);
+
+            const maskCanvas = document.createElement("canvas");
+            maskCanvas.width = canvasWidth;
+            maskCanvas.height = canvasHeight;
+            const maskCtx = maskCanvas.getContext("2d");
+            maskCtx.clearRect(0, 0, canvasWidth, canvasHeight);
+            maskCtx.fillStyle = "rgba(0,0,0,1)";
+            maskCtx.fillRect(dx, dy, drawW, drawH);
+
+            const stamp = Date.now();
+            return {
+              imageFile: await canvasToPngFile(canvas, `outpaint_source_${stamp}.png`),
+              maskFile: await canvasToPngFile(maskCanvas, `outpaint_mask_${stamp}.png`),
+              targetWidth: canvasWidth,
+              targetHeight: canvasHeight
+            };
+          };
+
+          const runLocalCrop = async (file, targetRatio) => {
+            const image = await loadImageFromFile(file);
+            const sourceRatio = image.width / image.height;
+            let sx = 0;
+            let sy = 0;
+            let sw = image.width;
+            let sh = image.height;
+
+            if (sourceRatio > targetRatio) {
+              sw = Math.round(image.height * targetRatio);
+              sx = Math.round((image.width - sw) / 2);
+            } else if (sourceRatio < targetRatio) {
+              sh = Math.round(image.width / targetRatio);
+              sy = Math.round((image.height - sh) / 2);
+            }
+
+            let outW = sw;
+            let outH = sh;
+            const maxEdge = 1536;
+            const maxCurrent = Math.max(outW, outH);
+            if (maxCurrent > maxEdge) {
+              const scale = maxEdge / maxCurrent;
+              outW = Math.max(64, Math.round(outW * scale));
+              outH = Math.max(64, Math.round(outH * scale));
+            }
+
+            const canvas = document.createElement("canvas");
+            canvas.width = outW;
+            canvas.height = outH;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(image, sx, sy, sw, sh, 0, 0, outW, outH);
+
+            const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+            return blob;
+          };
+
+          const extractUrlsFromText = (text) => {
+            const source = String(text || "");
+            const matches = source.match(/https?:\/\/[^\s"')]+/g);
+            return Array.isArray(matches) ? matches : [];
+          };
+
+          const isLikelyImageUrl = (value) => {
+            const url = String(value || "").trim();
+            if (!url) return false;
+            if (/^data:image\//i.test(url)) return true;
+            if (/\.(png|jpe?g|webp|gif|bmp|svg)(\?|$)/i.test(url)) return true;
+            return /\/images?\//i.test(url);
+          };
+
+          const isLikelyVideoUrl = (value) => {
+            const url = String(value || "").trim();
+            return /\.(mp4|mov|webm|m3u8|avi|mkv)(\?|$)/i.test(url) || /\/videos?\//i.test(url);
+          };
+
+          const isLikelyBase64ImagePayload = (value) => {
+            const text = String(value || "").trim();
+            if (text.length < 80) return false;
+            if (/^data:image\//i.test(text) || /^https?:\/\//i.test(text)) return false;
+            return /^[A-Za-z0-9+/_=\-\s]+$/.test(text);
+          };
+
+          const base64PayloadToDataUrl = (value) => {
+            const text = String(value || "").trim();
+            if (/^data:image\//i.test(text)) return text;
+            const normalized = text.replace(/\s+/g, "").replace(/-/g, "+").replace(/_/g, "/");
+            const padding = normalized.length % 4 ? "=".repeat(4 - (normalized.length % 4)) : "";
+            return `data:image/png;base64,${normalized}${padding}`;
+          };
+
+          const collectImagePayloadCandidates = (raw, bucket = []) => {
+            if (raw == null) return bucket;
+            if (typeof raw === "string") {
+              const value = raw.trim();
+              if (!value) return bucket;
+              if (isLikelyImageUrl(value)) bucket.push(value);
+              if (isLikelyBase64ImagePayload(value)) bucket.push(base64PayloadToDataUrl(value));
+              extractUrlsFromText(value).forEach((url) => {
+                if (isLikelyImageUrl(url)) bucket.push(url);
+              });
+              return bucket;
+            }
+            if (Array.isArray(raw)) {
+              raw.forEach((item) => collectImagePayloadCandidates(item, bucket));
+              return bucket;
+            }
+            if (typeof raw === "object") {
+              Object.entries(raw).forEach(([key, value]) => {
+                const lower = String(key || "").toLowerCase();
+                if (!lower || lower.startsWith("__")) return;
+                if (typeof value === "string" && value.trim()) {
+                  const textValue = value.trim();
+                  if (["b64_json", "image_base64", "base64", "b64"].includes(lower)) {
+                    bucket.push(base64PayloadToDataUrl(textValue));
+                  } else if ((lower.includes("url") || lower.includes("image")) && /^https?:\/\//i.test(textValue) && !isLikelyVideoUrl(textValue)) {
+                    bucket.push(textValue);
+                  } else if ((lower.includes("image") || lower.includes("output") || lower === "result") && isLikelyBase64ImagePayload(textValue)) {
+                    bucket.push(base64PayloadToDataUrl(textValue));
+                  } else if (isLikelyImageUrl(textValue)) {
+                    bucket.push(textValue);
+                  }
+                }
+                collectImagePayloadCandidates(value, bucket);
+              });
+            }
+            return bucket;
+          };
+
+          const extractImageErrorDetail = (data) => String(
+            data?.error?.message
+            || data?.message
+            || data?.reason
+            || data?.detail
+            || data?.data?.error?.message
+            || data?.data?.message
+            || data?.data?.reason
+            || data?.data?.detail
+            || ""
+          ).trim();
+
+          const parseImageResult = (data) => {
+            if (!data) throw new Error("图像接口返回为空");
+            const statusValue = String(data?.status || data?.state || data?.data?.status || data?.data?.state || "").trim().toLowerCase();
+            if (["failed", "error", "cancelled", "canceled", "rejected", "expired"].includes(statusValue)) {
+              const detail = extractImageErrorDetail(data);
+              throw new Error(`图像生成失败：status=${statusValue}${detail ? `，${detail}` : ""}`);
+            }
+
+            const prioritized = [];
+            if (Array.isArray(data?.data)) {
+              data.data.forEach((item) => {
+                if (!item || typeof item !== "object") return;
+                if (typeof item.b64_json === "string" && item.b64_json.trim()) {
+                  prioritized.push(`data:image/png;base64,${item.b64_json.trim()}`);
+                }
+                if (typeof item.url === "string" && item.url.trim()) prioritized.push(item.url.trim());
+              });
+            }
+
+            const candidates = [...prioritized, ...collectImagePayloadCandidates(data)];
+            const unique = [...new Set(candidates.filter(Boolean))];
+            if (!unique.length) {
+              const keys = Object.keys(data || {}).slice(0, 10).join(", ");
+              throw new Error(`无法识别图像返回格式（返回键：${keys || "none"}）`);
+            }
+
+            const first = unique[0];
+            if (/^data:image\//i.test(first) || /^https?:\/\//i.test(first)) return first;
+            throw new Error("识别到的图像结果无效");
+          };
+
+          const imageResultToOutput = async (candidate) => {
+            const value = String(candidate || "").trim();
+            if (!value) throw new Error("图像结果为空");
+            if (/^data:image\//i.test(value)) {
+              return {
+                dataUrl: value,
+                blob: await dataUrlToBlob(value),
+                url: ""
+              };
+            }
+            if (/^https?:\/\//i.test(value)) {
+              return {
+                dataUrl: "",
+                blob: null,
+                url: value
+              };
+            }
+            throw new Error("图像结果格式无效");
+          };
+
+          const ensureOutputBlob = async (output) => {
+            if (output?.blob) return output.blob;
+            if (output?.dataUrl) return dataUrlToBlob(output.dataUrl);
+            if (output?.url) {
+              try {
+                const response = await fetch(output.url);
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return response.blob();
+              } catch (error) {
+                throw new Error(`生成图已返回 URL，但浏览器无法下载该 URL：${error.message}`);
+              }
+            }
+            throw new Error("图像结果无法转换为 Blob");
+          };
+
+          const buildImageRequestSize = (ratioInfo) => {
+            const { width, height } = computeGenerationSizeByRatio(ratioInfo?.value || 1);
+            return `${width}x${height}`;
+          };
+
+          const callWorkerImageGeneration = async ({
+            prompt,
+            ratioInfo,
+            referenceFile = null,
+            maskFile = null,
+            logPrefix,
+            requestLabel
+          }) => {
+            const hostedImages = [];
+            const body = {
+              model: DEFAULT_IMAGE_MODEL,
+              prompt,
+              size: buildImageRequestSize(ratioInfo),
+              n: 1,
+              response_format: "url"
+            };
+
+            try {
+              if (referenceFile) {
+                const imagePayload = await createImageReferencePayload(referenceFile, "参考图");
+                hostedImages.push(imagePayload);
+                body.image = [imagePayload.url];
+              }
+              if (maskFile) {
+                const maskPayload = await createImageReferencePayload(maskFile, "蒙版图");
+                hostedImages.push(maskPayload);
+                body.mask = { image_url: maskPayload.url };
+              }
+
+              pushOutputMessage(`${requestLabel}：提交到当前 Worker 路由`);
+              const data = await apiRequest({
+                body
+              });
+              pushOutputMessage(`${requestLabel} 已返回，正在解析结果`);
+              return imageResultToOutput(parseImageResult(data));
+            } catch (error) {
+              const message = String(error?.message || error || "");
+              logProcess(`${logPrefix}_failed`, { message });
+              throw error;
+            } finally {
+              await cleanupHostedImages(hostedImages);
+            }
+          };
+
+          const callAiTextToImage = async ({ promptText, ratioInfo }) => {
+            const prompt = buildImagePrompt({
+              userText: promptText,
+              ratioInfo,
+              hasReference: false
+            });
+            return callWorkerImageGeneration({
+              prompt,
+              ratioInfo,
+              referenceFile: null,
+              logPrefix: "text_to_image",
+              requestLabel: "文生图请求"
+            });
+          };
+
+          const callAiReferenceGenerate = async ({ file, promptText, ratioInfo, strongFidelityMode = false }) => {
+            const image = await loadImageFromFile(file);
+            const ratioValue = ratioInfo?.value || image.width / image.height || 1;
+            const nextRatioInfo = {
+              ...(ratioInfo || {}),
+              value: ratioValue,
+              label: ratioInfo?.label || "Auto(参考图)"
+            };
+            return callWorkerImageGeneration({
+              prompt: buildImagePrompt({
+                userText: promptText,
+                ratioInfo: nextRatioInfo,
+                hasReference: true,
+                strongFidelityMode
+              }),
+              ratioInfo: nextRatioInfo,
+              referenceFile: file,
+              logPrefix: "reference_generate",
+              requestLabel: promptText ? "参考图+文字请求" : "参考图请求"
+            });
+          };
+          const callAiOutpaint = async (file, targetRatio, strongFidelityMode = false) => {
+            const { imageFile, maskFile, targetWidth, targetHeight } = await createOutpaintEditFiles(file, targetRatio);
+            const fidelityOutpaintHint = strongFidelityMode
+              ? " Keep exact subject identity and all existing regions unchanged; extend only the empty border areas. Match the original image style, texture, lighting, color tone, camera perspective, and noise grain seamlessly."
+              : "";
+            const output = await callWorkerImageGeneration({
+              referenceFile: imageFile,
+              maskFile,
+              ratioInfo: { value: targetRatio, label: `${targetWidth}:${targetHeight}` },
+              logPrefix: "outpaint",
+              requestLabel: "扩图请求",
+              prompt: `Outpaint this image to ${targetWidth}x${targetHeight}. Fill only the transparent areas naturally, preserve the existing non-transparent source image, and keep subject coherence.${fidelityOutpaintHint}`
+            });
+            return ensureOutputBlob(output);
+          };
+
+          const callAiImg2Img = async (file, targetRatio) => {
+            const image = await loadImageFromFile(file);
+            const { targetWidth, targetHeight } = computeTargetSize(image.width, image.height, targetRatio);
+            const output = await callWorkerImageGeneration({
+              referenceFile: file,
+              ratioInfo: { value: targetRatio, label: `${targetWidth}:${targetHeight}` },
+              logPrefix: "img2img",
+              requestLabel: "图生图请求",
+              prompt: `Recompose the image to ${targetWidth}x${targetHeight} while keeping the original style, lighting, and visual language.`
+            });
+            return ensureOutputBlob(output);
+          };
+
+          const runRatioDecision = async ({ file, targetRatio, keepStyleEnabled, strongFidelityMode = false }) => {
+            const image = await loadImageFromFile(file);
+            const sourceRatio = image.width / image.height;
+            const epsilon = 0.0001;
+
+            if (Math.abs(sourceRatio - targetRatio) <= epsilon) {
+              return {
+                mode: "same",
+                blob: await runLocalCrop(file, targetRatio)
+              };
+            }
+
+            if (sourceRatio > targetRatio && !keepStyleEnabled) {
+              return {
+                mode: "crop-scale",
+                blob: await runLocalCrop(file, targetRatio)
+              };
+            }
+
+            if (sourceRatio < targetRatio) {
+              return {
+                mode: "outpaint",
+                blob: await callAiOutpaint(file, targetRatio, strongFidelityMode)
+              };
+            }
+
+            if (sourceRatio > targetRatio && keepStyleEnabled) {
+              return {
+                mode: "img2img",
+                blob: await callAiImg2Img(file, targetRatio)
+              };
+            }
+
+            return {
+              mode: "fallback",
+              blob: await runLocalCrop(file, targetRatio)
+            };
+          };
+
+          const selectRatio = (ratioItem) => {
+            selectedRatio.value = ratioItem;
+            currentRatioLabel.value = ratioItem.label;
+            ratioMenuOpen.value = false;
+            showStatus(`已选择比例：${ratioItem.label}`, "normal");
+            pushOutputMessage(`已选择比例：${ratioItem.label}`);
+            logProcess("ratio_selected", {
+              ratio: ratioItem.label,
+              keepStyle: keepStyle.value
+            });
+          };
+
+          const generateFromText = async ({ promptText, ratioInfo }) => {
+            ratioBusy.value = true;
+            showStatus(`正在生成（${ratioInfo.label}）...`, "normal");
+            const startedAt = performance.now();
+            logProcess("text_generation_started", {
+              ratio: ratioInfo.label
+            });
+            try {
+              const output = await callAiTextToImage({ promptText, ratioInfo });
+              const outputStamp = Date.now();
+              const fileName = `text_${ratioInfo.label.replace(":", "x")}_${outputStamp}.png`;
+              const imageDataUrl = output.dataUrl || output.url || (output.blob ? await blobToDataUrl(output.blob) : "");
+              if (!imageDataUrl) throw new Error("文生图返回为空");
+              logProcess("text_generation_completed", {
+                ratio: ratioInfo.label,
+                costMs: Math.round(performance.now() - startedAt),
+                outputFile: fileName
+              });
+              return {
+                dataUrl: imageDataUrl,
+                blob: output.blob || null,
+                fileName,
+                mode: "text-to-image"
+              };
+            } catch (error) {
+              showStatus(error.message, "error");
+              logProcess("text_generation_failed", {
+                ratio: ratioInfo.label,
+                error: error.message,
+                costMs: Math.round(performance.now() - startedAt)
+              });
+              throw error;
+            } finally {
+              ratioBusy.value = false;
+            }
+          };
+
+          const generateWithReference = async ({ promptText, referenceFile, ratioInfo, controlSignals = null }) => {
+            ratioBusy.value = true;
+            showStatus(`正在处理参考图（${ratioInfo.label}）...`, "normal");
+            const startedAt = performance.now();
+            const strongFidelityMode = Boolean(controlSignals?.strongFidelityMode);
+            const effectiveKeepStyle = getEffectiveKeepStyle() && !strongFidelityMode;
+            logProcess("reference_generation_started", {
+              ratio: ratioInfo.label,
+              keepStyle: getEffectiveKeepStyle(),
+              effectiveKeepStyle,
+              strongFidelityMode,
+              fileName: referenceFile?.name || "reference.png"
+            });
+
+            try {
+              let workingFile = referenceFile;
+              let mode = "reference";
+              let finalOutput = null;
+              const shouldApplyRatioLocally = !String(promptText || "").trim() && ratioInfo?.value && ratioInfo.shouldApplyToReference;
+              if (shouldApplyRatioLocally) {
+                const ratioResult = await runRatioDecision({
+                  file: workingFile,
+                  targetRatio: ratioInfo.value,
+                  keepStyleEnabled: effectiveKeepStyle,
+                  strongFidelityMode
+                });
+                mode = ratioResult.mode || mode;
+                workingFile = new File(
+                  [ratioResult.blob],
+                  `ratio_pre_${Date.now()}.png`,
+                  { type: "image/png" }
+                );
+              }
+
+              const shouldRunReferenceAi = Boolean(promptText) || mode === "reference";
+              if (!finalOutput && shouldRunReferenceAi) {
+                finalOutput = await callAiReferenceGenerate({
+                  file: workingFile,
+                  promptText,
+                  ratioInfo,
+                  strongFidelityMode
+                });
+                mode = `${mode}+reference-edit`;
+              } else {
+                finalOutput = {
+                  blob: workingFile,
+                  dataUrl: await blobToDataUrl(workingFile),
+                  url: ""
+                };
+              }
+
+              const outputStamp = Date.now();
+              const fileName = `reference_${ratioInfo.label.replace(":", "x")}_${outputStamp}.png`;
+              const imageDataUrl = finalOutput.dataUrl || finalOutput.url || (finalOutput.blob ? await blobToDataUrl(finalOutput.blob) : "");
+              if (!imageDataUrl) throw new Error("参考图生成返回为空");
+              if (finalOutput.blob) {
+                selectedImageFile.value = new File([finalOutput.blob], fileName, { type: "image/png" });
+              }
+              logProcess("reference_generation_completed", {
+                ratio: ratioInfo.label,
+                mode,
+                costMs: Math.round(performance.now() - startedAt),
+                outputFile: fileName
+              });
+              return {
+                dataUrl: imageDataUrl,
+                blob: finalOutput.blob || null,
+                fileName,
+                mode
+              };
+            } catch (error) {
+              showStatus(error.message, "error");
+              logProcess("reference_generation_failed", {
+                ratio: ratioInfo.label,
+                error: error.message,
+                costMs: Math.round(performance.now() - startedAt)
+              });
+              throw error;
+            } finally {
+              ratioBusy.value = false;
+            }
+          };
+
+          const toggleRatioMenu = () => {
+            if (ratioMenuOpen.value) {
+              ratioMenuOpen.value = false;
+              return;
+            }
+            ratioMenuOpen.value = true;
+          };
+
+          const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+          watch(aiDialogVisible, (visible) => {
+            syncAiDialogDocumentState();
+            if (visible) {
+              scrollOutputToBottom();
+            }
+          });
+
+          watch(
+            () => latestOutput.value?.dataUrl,
+            () => {
+              scrollOutputToBottom();
+            }
+          );
+
+          onMounted(() => {
+            restoreAuthSession();
+            loadLocalWorkspace();
+            loadPromptGallery();
+            syncAiDialogDocumentState();
+            window.addEventListener("wheel", handleAiDialogWheel, { passive: false, capture: true });
+            window.addEventListener("touchstart", handleAiDialogTouchStart, { passive: true, capture: true });
+            window.addEventListener("touchmove", handleAiDialogTouchMove, { passive: false, capture: true });
+            const appRoot = document.querySelector(".app");
+            if (appRoot) appRoot.addEventListener("scroll", handlePromptGalleryScroll, { passive: true });
+            window.addEventListener("scroll", handlePromptGalleryScroll, { passive: true });
+            document.addEventListener("click", (event) => {
+              const target = event.target;
+              if (!target) return;
+              if (!(target.closest && (target.closest(".ratio-box") || target.closest(".ratio-inline-row")))) {
+                ratioMenuOpen.value = false;
+              }
+            });
+          });
+
+          onUnmounted(() => {
+            const appRoot = document.querySelector(".app");
+            if (appRoot) appRoot.classList.remove("ai-dialog-active");
+            window.removeEventListener("wheel", handleAiDialogWheel, true);
+            window.removeEventListener("touchstart", handleAiDialogTouchStart, true);
+            window.removeEventListener("touchmove", handleAiDialogTouchMove, true);
+            if (appRoot) appRoot.removeEventListener("scroll", handlePromptGalleryScroll);
+            window.removeEventListener("scroll", handlePromptGalleryScroll);
+            if (promptGalleryScrollTimer) window.clearTimeout(promptGalleryScrollTimer);
+            if (chatCollapseTimer) window.clearTimeout(chatCollapseTimer);
+          });
+
+          return {
+            authPanelOpen,
+            authPanelMode,
+            authTitle,
+            authForm,
+            authBusy,
+            authError,
+            redeemCode,
+            redeemBusy,
+            isLoggedIn,
+            currentUserName,
+            creditBalanceLabel,
+            openAuthPanel,
+            openRedeemPurchase,
+            resetComposer,
+            closeAuthPanel,
+            loginUser,
+            registerUser,
+            logoutUser,
+            redeemCredits,
+            promptGalleryItems,
+            promptGalleryDisplayItems,
+            promptGalleryTotal,
+            promptPreviewItem,
+            openPromptGalleryPreview,
+            closePromptGalleryPreview,
+            copyPromptGalleryPrompt,
+            chatInput,
+            latestOutput,
+            outputMessages,
+            outputMessageContainer,
+            aiDialogOpen,
+            aiDialogVisible,
+            aiDialogTitle,
+            activePanel,
+            tasks,
+            galleryImages,
+            runningTaskCount,
+            queuedTaskCount,
+            runningOnlyTaskCount,
+            hasQueueCapacity,
+            canSubmitTask,
+            completedTaskCount,
+            failedTaskCount,
+            sortedTasks,
+            visibleGalleryImages,
+            gallerySummary,
+            gallerySelectionMode,
+            selectedGalleryIds,
+            previewImage,
+            attachments,
+            sending,
+            isGenerating,
+            isChatCollapsed,
+            sendButtonText,
+            composerRatioLabel,
+            keepStyle,
+            ratioMenuOpen,
+            ratioOptions,
+            ratioBusy,
+            selectedImageFile,
+            imageInput,
+            currentRatioLabel,
+            statusText,
+            statusClass,
+            triggerImageUpload,
+            handleUpload,
+            removeAttachment,
+            sendMessage,
+            openTopPanel,
+            closeTopPanel,
+            taskStatusLabel,
+            formatTaskDuration,
+            getTaskThumbnail,
+            openTaskImage,
+            toggleGallerySelection,
+            toggleGalleryImageSelection,
+            deleteSelectedGalleryImages,
+            closePreviewImage,
+            exportLocalData,
+            clearLocalData,
+            toggleRatioMenu,
+            selectRatio,
+            handlePromptGalleryWheel,
+          };
+        }
+      }).mount("#app");
+    })();
+  </script>
+</body>
+</html>
