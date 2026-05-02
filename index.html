@@ -2338,9 +2338,9 @@
       }
 
       .prompt-gallery-track {
-        grid-template-columns: 1fr;
-        grid-auto-rows: 86px;
-        gap: 10px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-auto-rows: 78px;
+        gap: 8px;
         padding-inline: 0;
       }
 
@@ -3263,6 +3263,10 @@
       background: rgba(255, 255, 255, 0.75);
     }
 
+    .mobile-user-status-actions {
+      display: none;
+    }
+
     /* Keep secondary menus aligned with the AI dialog light glass palette. */
     .auth-mask,
     .preview-mask {
@@ -3428,48 +3432,88 @@
 
     @media (max-width: 720px) {
       .user-actions {
-        top: max(10px, env(safe-area-inset-top));
-        left: max(10px, env(safe-area-inset-left));
-        padding: 5px 8px;
-        gap: 4px;
-        max-width: calc(100vw - 20px);
+        top: max(8px, env(safe-area-inset-top));
+        left: max(8px, env(safe-area-inset-left));
+        padding: 4px 6px;
+        gap: 2px;
+        max-width: calc(100vw - 132px);
+        overflow-x: auto;
+        white-space: nowrap;
+        scrollbar-width: none;
+      }
+
+      .user-actions::-webkit-scrollbar {
+        display: none;
+      }
+
+      .user-actions .user-logo {
+        display: none;
       }
 
       .user-actions .user-pill {
-        min-height: 30px;
-        padding: 0 9px;
+        flex: 0 0 auto;
+        min-height: 32px;
+        padding: 0 8px;
         font-size: 12px;
       }
 
       .user-actions .login-register-btn {
         min-height: 32px;
-        padding: 0 12px;
+        padding: 0 10px;
       }
 
       .user-status-actions {
-        top: max(54px, calc(env(safe-area-inset-top) + 54px));
-        right: max(10px, env(safe-area-inset-right));
-        max-width: calc(100vw - 20px);
+        display: none;
       }
 
-      .user-status-actions .user-pill {
-        min-width: 38px;
-        height: 38px;
-        min-height: 38px;
-        padding: 0 10px;
+      .mobile-user-status-actions {
+        display: inline-flex;
+        align-items: center;
+        gap: 2px;
+        flex: 0 0 auto;
+      }
+
+      .mobile-user-status-actions .user-pill {
+        min-height: 32px;
+        padding: 0 8px;
         font-size: 12px;
+        background: rgba(0, 0, 0, 0.05);
+      }
+
+      .mobile-user-status-actions .user-name {
+        max-width: 74px;
+      }
+
+      .mobile-user-status-actions .credit-pill {
+        max-width: 88px;
       }
 
       .top-actions {
-        top: 10px;
-        right: 10px;
-        gap: 7px;
+        top: max(8px, env(safe-area-inset-top));
+        right: max(8px, env(safe-area-inset-right));
+        left: auto;
+        gap: 6px;
+        flex-wrap: nowrap;
+      }
+
+      .top-actions .action-btn {
+        height: 42px;
+        min-width: 42px;
+        padding: 0 12px;
+      }
+
+      .top-actions .gallery-entry {
+        min-width: 58px;
+      }
+
+      .prompt-gallery-strip {
+        padding-top: max(72px, calc(env(safe-area-inset-top) + 72px));
       }
 
       .workspace-panel {
         left: 10px;
         right: 10px;
-        top: 62px;
+        top: max(64px, calc(env(safe-area-inset-top) + 64px));
       }
 
       .task-panel,
@@ -3500,8 +3544,12 @@
       <span class="user-pill user-logo" aria-hidden="true">&nbsp;</span>
       <button class="user-pill user-btn" type="button" @click="openAuthPanel('redeem')">兑换码</button>
       <button class="user-pill user-btn" type="button" @click="openRedeemPurchase">充值</button>
-      <button class="user-pill user-btn login-register-btn" type="button" @click="openAuthPanel('login')">登录/注册</button>
+      <button v-if="!isLoggedIn" class="user-pill user-btn login-register-btn" type="button" @click="openAuthPanel('login')">登录/注册</button>
       <button v-if="isLoggedIn" class="user-pill user-btn" type="button" @click="logoutUser">退出</button>
+      <span v-if="isLoggedIn" class="mobile-user-status-actions" aria-label="当前账号状态">
+        <span class="user-pill user-name">{{ currentUserName }}</span>
+        <span class="user-pill credit-pill">算力 {{ creditBalanceLabel }}</span>
+      </span>
     </div>
 
     <div v-if="isLoggedIn" class="user-status-actions">
