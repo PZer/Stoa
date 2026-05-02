@@ -2711,6 +2711,16 @@
       border-bottom: 1px solid rgba(255, 255, 255, 0.12);
     }
 
+    .workspace-panel-head > div:first-child {
+      min-width: 0;
+    }
+
+    .workspace-panel-head .panel-close {
+      flex: 0 0 auto;
+      min-width: 52px;
+      white-space: nowrap;
+    }
+
     .workspace-panel-head h3 {
       margin: 0;
       font-size: 20px;
@@ -2961,6 +2971,19 @@
     .image-preview-ratio strong {
       color: rgba(244, 248, 255, 0.94);
       font-size: 15px;
+    }
+
+    .image-preview-actions .download-link {
+      border-color: rgba(0, 0, 0, 0.12);
+      background: rgba(255, 255, 255, 0.82);
+      color: #111827;
+      font-weight: 700;
+    }
+
+    .image-preview-actions .download-link:hover {
+      border-color: rgba(0, 0, 0, 0.18);
+      background: rgba(255, 255, 255, 0.94);
+      color: #000000;
     }
 
     .prompt-preview-panel {
@@ -3635,13 +3658,13 @@
       <button v-if="isLoggedIn" class="user-pill user-btn" type="button" @click="logoutUser">退出</button>
       <span v-if="isLoggedIn" class="mobile-user-status-actions" aria-label="当前账号状态">
         <span class="user-pill user-name">{{ currentUserName }}</span>
-        <span class="user-pill credit-pill">算力 {{ creditBalanceLabel }}</span>
+        <span class="user-pill credit-pill">积分 {{ creditBalanceLabel }}</span>
       </span>
     </div>
 
     <div v-if="isLoggedIn" class="user-status-actions">
       <span class="user-pill user-name">{{ currentUserName }}</span>
-      <span class="user-pill credit-pill">算力值 {{ creditBalanceLabel }}</span>
+      <span class="user-pill credit-pill">积分 {{ creditBalanceLabel }}</span>
     </div>
 
     <div class="top-actions">
@@ -3847,7 +3870,7 @@
             <div class="input-wrapper">
               <textarea
                 v-model="chatInput"
-                placeholder="描述你想生成的图片，也可以上传多张参考图..."
+                placeholder="描述你想生成的图片，或上传参考图..."
               ></textarea>
             </div>
           </div>
