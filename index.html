@@ -2890,7 +2890,7 @@
     .preview-mask {
       position: fixed;
       inset: 0;
-      z-index: 95;
+      z-index: 180;
       background: rgba(0, 0, 0, 0.5);
       backdrop-filter: blur(10px);
       display: grid;
@@ -2938,6 +2938,29 @@
       font-size: 13px;
       line-height: 1.55;
       word-break: break-word;
+    }
+
+    .image-preview-panel {
+      grid-template-columns: minmax(0, 1fr) minmax(180px, 240px);
+    }
+
+    .image-preview-actions {
+      align-content: center;
+    }
+
+    .image-preview-ratio {
+      display: grid;
+      gap: 4px;
+    }
+
+    .image-preview-ratio span {
+      color: rgba(212, 223, 238, 0.62);
+      font-size: 12px;
+    }
+
+    .image-preview-ratio strong {
+      color: rgba(244, 248, 255, 0.94);
+      font-size: 15px;
     }
 
     .prompt-preview-panel {
@@ -3526,12 +3549,76 @@
       }
 
       .preview-panel {
+        width: 100%;
+        max-height: calc(100dvh - 20px);
         grid-template-columns: 1fr;
+        overflow: hidden;
       }
 
       .preview-panel aside {
         border-left: 0;
         border-top: 1px solid rgba(255, 255, 255, 0.12);
+      }
+
+      .preview-close {
+        top: 10px;
+        right: 10px;
+        z-index: 8;
+        background: rgba(255, 255, 255, 0.86);
+        color: #333333;
+        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
+      }
+
+      .image-preview-panel {
+        grid-template-rows: minmax(0, 1fr) auto;
+      }
+
+      .image-preview-panel > img {
+        height: min(68dvh, calc(100dvh - 108px));
+        max-height: none;
+      }
+
+      .image-preview-actions {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px 14px 14px;
+      }
+
+      .image-preview-ratio {
+        margin: 0;
+      }
+
+      .image-preview-ratio strong {
+        color: #333333;
+      }
+
+      .prompt-preview-panel {
+        height: calc(100dvh - 20px);
+        max-height: calc(100dvh - 20px);
+        grid-template-rows: minmax(180px, 42dvh) minmax(0, 1fr);
+      }
+
+      .prompt-preview-image {
+        height: 100%;
+        max-height: none;
+      }
+
+      .prompt-preview-panel aside {
+        min-height: 0;
+        overflow: auto;
+        padding: 14px;
+      }
+
+      .prompt-preview-title {
+        padding-right: 56px;
+      }
+
+      .prompt-preview-prompt {
+        min-height: 150px;
+        max-height: 32dvh;
+        resize: none;
       }
     }
   </style>
@@ -3584,7 +3671,7 @@
           </button>
           <div class="task-row-main">
             <strong>{{ task.prompt || "无提示词" }}</strong>
-            <p>{{ task.model || "image model" }} · {{ taskStatusLabel(task.status) }} · {{ formatTaskDuration(task) }}</p>
+            <p>{{ taskStatusLabel(task.status) }} · {{ formatTaskDuration(task) }}</p>
             <p v-if="task.error" class="task-error">{{ task.error }}</p>
             <p v-else-if="task.logs && task.logs.length" class="task-log">{{ task.logs[task.logs.length - 1].text }}</p>
           </div>
@@ -3622,13 +3709,14 @@
     </section>
 
     <div v-if="previewImage" class="preview-mask" @click.self="closePreviewImage">
-      <section class="preview-panel">
+      <section class="preview-panel image-preview-panel">
         <button class="mini-btn preview-close" type="button" @click="closePreviewImage">关闭</button>
         <img :src="previewImage.dataUrl" :alt="previewImage.fileName || '生成图片'">
-        <aside>
-          <h3>{{ previewImage.fileName || "生成图片" }}</h3>
-          <p>{{ previewImage.model || "image model" }} · {{ previewImage.ratio || "Auto" }}</p>
-          <p>{{ previewImage.prompt || "无提示词" }}</p>
+        <aside class="image-preview-actions">
+          <p class="image-preview-ratio">
+            <span>图片比例</span>
+            <strong>{{ previewImage.ratio || "Auto" }}</strong>
+          </p>
           <a class="download-link" :href="previewImage.dataUrl" :download="previewImage.fileName || 'image-result.png'">下载图片</a>
         </aside>
       </section>
