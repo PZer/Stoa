@@ -2970,8 +2970,9 @@
     }
 
     .image-preview-ratio strong {
-      color: rgba(244, 248, 255, 0.94);
-      font-size: 15px;
+      color: #0057d8;
+      font-size: 16px;
+      font-weight: 800;
     }
 
     .image-preview-actions .download-link {
@@ -3568,8 +3569,42 @@
         width: auto;
       }
 
+      .library-panel {
+        display: grid;
+        height: calc(100vh - 84px);
+        height: calc(100dvh - 84px);
+        max-height: calc(100vh - 84px);
+        max-height: calc(100dvh - 84px);
+        grid-template-rows: auto minmax(0, 1fr);
+        overflow: hidden;
+      }
+
       .library-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-auto-rows: clamp(140px, 44vw, 184px);
+        align-content: start;
+        height: 100%;
+        max-height: none;
+        min-height: 0;
+        padding: 12px;
+        gap: 12px;
+        overflow-y: auto;
+        overflow-x: hidden;
+      }
+
+      .library-card {
+        display: block;
+        width: 100%;
+        height: 100%;
+        aspect-ratio: auto;
+        min-width: 0;
+        min-height: 0;
+      }
+
+      .library-card img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
       }
 
       .preview-panel {
@@ -3615,7 +3650,7 @@
       }
 
       .image-preview-ratio strong {
-        color: #333333;
+        color: #0057d8;
       }
 
       .prompt-preview-panel {
@@ -3694,7 +3729,7 @@
             <span v-else class="task-spinner"></span>
           </button>
           <div class="task-row-main">
-            <strong>{{ task.prompt || "无提示词" }}</strong>
+            <strong>{{ formatTaskTitle(task) }}</strong>
             <p>{{ taskStatusLabel(task.status) }} · {{ formatTaskDuration(task) }}</p>
             <p v-if="task.error" class="task-error">{{ task.error }}</p>
             <p v-else-if="task.logs && task.logs.length" class="task-log">{{ task.logs[task.logs.length - 1].text }}</p>
@@ -3882,6 +3917,7 @@
                 ref="imageInput"
                 type="file"
                 accept="image/*"
+                multiple
                 style="display:none"
                 @change="handleUpload"
               >
@@ -3947,6 +3983,10 @@
           const LOCAL_DB_VERSION = 1;
           const GALLERY_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
           const MAX_ACTIVE_TASKS = 5;
+          const MAX_REFERENCE_IMAGES = 9;
+          const MAX_REFERENCE_IMAGE_BYTES = 20 * 1024 * 1024;
+          const FIRST_IMAGE_AUTO_PROMPT = "按图片中的元素进行重新生图，但不要和原图一样！";
+          const SINGLE_IMAGE_INSTRUCTION = "生成一张图。";
           const WORKER_API_BASE = "https://draw.lalakunaozi.fun";
           const AUTH_STORAGE_KEY = "photo_react_auth_v1";
           const PROMPT_GALLERY_JSON_URL = "./prompt-gallery/gallery_prompts.json";
@@ -4045,10 +4085,12 @@
           const statusText = ref("");
           const statusTone = ref("normal");
           const isChatCollapsed = ref(false);
+          const taskClockNow = ref(Date.now());
           let aiDialogTouchY = 0;
           let generationContext = null;
           let taskQueueRunning = false;
           let chatCollapseTimer = null;
+          let taskClockTimer = null;
 
           const statusClass = computed(() => {
             if (statusTone.value === "ok") return "ok";
@@ -4487,6 +4529,15 @@
             return map[status] || "未知";
           };
 
+          const formatTaskTitle = (task) => {
+            const ordered = [...tasks.value].sort((a, b) => (
+              Number(a.createdAt || 0) - Number(b.createdAt || 0)
+              || String(a.id || "").localeCompare(String(b.id || ""))
+            ));
+            const index = ordered.findIndex((item) => item.id === task?.id);
+            return `Stoa生图#${index >= 0 ? index + 1 : ordered.length + 1}`;
+          };
+
           const formatDuration = (ms) => {
             const value = Math.max(0, Number(ms) || 0);
             if (value < 1000) return "0s";
@@ -4498,7 +4549,7 @@
 
           const formatTaskDuration = (task) => {
             if (!task) return "0s";
-            const end = task.completedAt || (task.status === "running" ? Date.now() : task.updatedAt || task.createdAt);
+            const end = task.completedAt || (task.status === "running" ? taskClockNow.value : task.updatedAt || task.createdAt);
             return formatDuration(Number(end || 0) - Number(task.startedAt || task.createdAt || 0));
           };
 
@@ -5145,12 +5196,49 @@
             return new File([blob], name, { type: "image/png" });
           };
 
+          const formatUploadBytes = (bytes) => {
+            const safeBytes = Math.max(0, Number(bytes) || 0);
+            if (safeBytes < 1024 * 1024) return `${Math.ceil(safeBytes / 1024)}KB`;
+            return `${(safeBytes / 1024 / 1024).toFixed(1)}MB`;
+          };
+
+          const validateImageFilesForUpload = (files) => {
+            const list = Array.isArray(files) ? files : [];
+            if (!list.length) return false;
+            if (attachments.value.length + list.length > MAX_REFERENCE_IMAGES) {
+              showStatus(`最多上传 ${MAX_REFERENCE_IMAGES} 张图片`, "error");
+              return false;
+            }
+            const oversized = list.find((file) => Number(file?.size || 0) > MAX_REFERENCE_IMAGE_BYTES);
+            if (oversized) {
+              showStatus(`${oversized.name || "图片"} 超过 ${formatUploadBytes(MAX_REFERENCE_IMAGE_BYTES)}`, "error");
+              return false;
+            }
+            return true;
+          };
+
+          const validateTaskReferenceImages = (items) => {
+            const list = Array.isArray(items) ? items : [];
+            if (list.length > MAX_REFERENCE_IMAGES) {
+              showStatus(`最多上传 ${MAX_REFERENCE_IMAGES} 张图片`, "error");
+              return false;
+            }
+            const oversized = list.find((item) => Number(item?.size || 0) > MAX_REFERENCE_IMAGE_BYTES);
+            if (oversized) {
+              showStatus(`${oversized.name || "图片"} 超过 ${formatUploadBytes(MAX_REFERENCE_IMAGE_BYTES)}`, "error");
+              return false;
+            }
+            return true;
+          };
+
           const addAttachment = async ({ name, blob, dataUrl, source = "upload", maskDataUrl = "" }) => {
             const resolvedDataUrl = dataUrl || (blob ? await blobToDataUrl(blob) : "");
             const item = {
               id: `${Date.now()}_${Math.random().toString(16).slice(2)}`,
               name: name || "image.png",
               dataUrl: resolvedDataUrl,
+              size: Number(blob?.size || 0),
+              type: blob?.type || "",
               source,
               maskDataUrl
             };
@@ -5164,12 +5252,18 @@
           };
 
           const handleUpload = async (event) => {
-            const file = event.target.files && event.target.files[0];
-            if (!file) return;
-            selectedImageFile.value = file;
-            await addAttachment({ name: file.name, blob: file, source: "upload" });
-            showStatus("已上传图片，可进行比例调整或编辑", "ok");
-            pushOutputMessage(`已上传图片：${file.name}`);
+            const files = Array.from(event.target.files || []);
+            if (!files.length) return;
+            if (!validateImageFilesForUpload(files)) {
+              event.target.value = "";
+              return;
+            }
+            for (const file of files) {
+              await addAttachment({ name: file.name, blob: file, source: "upload" });
+              pushOutputMessage(`已上传图片：${file.name}`);
+            }
+            selectedImageFile.value = files[0] || null;
+            showStatus(`已上传 ${attachments.value.length}/${MAX_REFERENCE_IMAGES} 张图片，可进行比例调整或编辑`, "ok");
             event.target.value = "";
           };
 
@@ -5177,14 +5271,8 @@
             if (!item?.dataUrl) return null;
             const blob = await dataUrlToBlob(item.dataUrl);
             const name = item.name || `attachment_${Date.now()}.png`;
-            const type = blob.type || "image/png";
+            const type = item.type || blob.type || "image/png";
             return new File([blob], name, { type });
-          };
-
-          const findReferenceFile = async () => {
-            if (!attachments.value.length) return null;
-            if (selectedImageFile.value) return selectedImageFile.value;
-            return attachmentItemToFile(attachments.value[attachments.value.length - 1]);
           };
 
           const parseRatioFromText = (text) => {
@@ -5367,14 +5455,39 @@
             id: item.id,
             name: item.name,
             dataUrl: item.dataUrl,
+            size: item.size || 0,
+            type: item.type || "",
             source: item.source,
             maskDataUrl: item.maskDataUrl || ""
           }));
 
-          const findReferenceFileForTask = async (task) => {
+          const buildReferencePolicy = ({ promptText, attachmentsSnapshot, ratioSnapshot }) => {
+            const hasPrompt = Boolean(String(promptText || "").trim());
+            const hasFixedRatio = Boolean(ratioSnapshot?.value);
+            const hasMultipleImages = (attachmentsSnapshot || []).length > 1;
+            if (hasMultipleImages && !hasPrompt) {
+              return {
+                useFirstImageOnly: true,
+                autoPrompt: hasFixedRatio ? "" : FIRST_IMAGE_AUTO_PROMPT
+              };
+            }
+            return {
+              useFirstImageOnly: false,
+              autoPrompt: ""
+            };
+          };
+
+          const getTaskReferenceItems = (task) => {
             const items = Array.isArray(task?.attachmentsSnapshot) ? task.attachmentsSnapshot : [];
-            if (!items.length) return null;
-            return attachmentItemToFile(items[items.length - 1]);
+            if (!items.length) return [];
+            if (task?.referencePolicy?.useFirstImageOnly) return items.slice(0, 1);
+            return items;
+          };
+
+          const findReferenceFilesForTask = async (task) => {
+            const items = getTaskReferenceItems(task);
+            const files = await Promise.all(items.map((item) => attachmentItemToFile(item)));
+            return files.filter(Boolean);
           };
 
           const resetComposerAfterSubmit = () => {
@@ -5411,6 +5524,9 @@
               showStatus("请选择目标意图！", "error");
               return null;
             }
+            if (!validateTaskReferenceImages(attachmentsSnapshot)) {
+              return null;
+            }
             const requiredCredits = attachmentsSnapshot.length ? REFERENCE_IMAGE_CREDIT_COST : TEXT_IMAGE_CREDIT_COST;
             if (creditBalance.value < requiredCredits) {
               openAuthPanel("redeem");
@@ -5418,18 +5534,23 @@
               return null;
             }
             const ratioSnapshot = getEffectiveSelectedRatio();
+            const referencePolicy = buildReferencePolicy({ promptText, attachmentsSnapshot, ratioSnapshot });
+            const effectiveInputImageCount = referencePolicy.useFirstImageOnly
+              ? Math.min(1, attachmentsSnapshot.length)
+              : attachmentsSnapshot.length;
             const now = Date.now();
             return {
               id: createLocalId("task"),
               status: "queued",
-              prompt: promptText || "参考图生成",
+              prompt: referencePolicy.autoPrompt || promptText || "参考图生成",
               originalPrompt: promptText,
               model: DEFAULT_IMAGE_MODEL,
               ratioLabel: ratioSnapshot?.label || currentRatioLabel.value || "Auto",
               selectedRatio: ratioSnapshot ? { ...ratioSnapshot } : { ...ratioOptions[0] },
               keepStyle: Boolean(keepStyle.value),
+              referencePolicy,
               attachmentsSnapshot,
-              inputImageCount: attachmentsSnapshot.length,
+              inputImageCount: effectiveInputImageCount,
               estimatedCost: requiredCredits,
               outputImageIds: [],
               logs: [],
@@ -5448,14 +5569,20 @@
             latestOutput.value = null;
             sending.value = true;
 
-            const originalPromptText = String(task.originalPrompt || task.prompt || "").trim();
+            const originalPromptText = String(task.originalPrompt || "").trim();
+            const autoPromptText = String(task.referencePolicy?.autoPrompt || "").trim();
             let promptText = originalPromptText;
             let referenceFile = null;
+            let referenceFiles = [];
             const promptControlSignals = analyzePromptControlSignals(originalPromptText);
             const startedAt = Date.now();
 
             try {
-              referenceFile = await findReferenceFileForTask(task);
+              referenceFiles = await findReferenceFilesForTask(task);
+              referenceFile = referenceFiles[0] || null;
+              if (!promptText && autoPromptText) {
+                promptText = autoPromptText;
+              }
               await upsertTask({
                 id: task.id,
                 status: "running",
@@ -5509,7 +5636,7 @@
               pushOutputMessage(`Aspect Ratio：${ratioInfo.label}`, "system");
 
               const generated = referenceFile
-                ? await generateWithReference({ promptText, referenceFile, ratioInfo, controlSignals: promptControlSignals })
+                ? await generateWithReference({ promptText, referenceFiles, ratioInfo, controlSignals: promptControlSignals })
                 : await generateFromText({ promptText, ratioInfo });
 
               if (!generated?.dataUrl) {
@@ -5888,28 +6015,50 @@
             return `${width}x${height}`;
           };
 
+          const hasSingleImageInstruction = (value) => (
+            /生成\s*(一|1)\s*张图|输出\s*(一|1)\s*张图|只\s*生成\s*(一|1)\s*张|仅\s*生成\s*(一|1)\s*张/.test(String(value || ""))
+          );
+
+          const ensureSingleImageInstruction = (value) => {
+            const promptText = String(value || "").trim();
+            if (!promptText) return SINGLE_IMAGE_INSTRUCTION;
+            if (hasSingleImageInstruction(promptText)) return promptText;
+            return `${promptText}\n${SINGLE_IMAGE_INSTRUCTION}`;
+          };
+
           const callWorkerImageGeneration = async ({
             prompt,
             ratioInfo,
             referenceFile = null,
+            referenceFiles = [],
             maskFile = null,
             logPrefix,
             requestLabel
           }) => {
             const hostedImages = [];
+            const effectiveReferenceFiles = Array.isArray(referenceFiles) && referenceFiles.length
+              ? referenceFiles.filter(Boolean)
+              : (referenceFile ? [referenceFile] : []);
             const body = {
               model: DEFAULT_IMAGE_MODEL,
-              prompt,
+              prompt: ensureSingleImageInstruction(prompt),
               size: buildImageRequestSize(ratioInfo),
               n: 1,
               response_format: "url"
             };
 
             try {
-              if (referenceFile) {
-                const imagePayload = await createImageReferencePayload(referenceFile, "参考图");
-                hostedImages.push(imagePayload);
-                body.image = [imagePayload.url];
+              if (effectiveReferenceFiles.length) {
+                const imagePayloads = [];
+                for (let index = 0; index < effectiveReferenceFiles.length; index += 1) {
+                  const imagePayload = await createImageReferencePayload(
+                    effectiveReferenceFiles[index],
+                    effectiveReferenceFiles.length > 1 ? `参考图 ${index + 1}` : "参考图"
+                  );
+                  hostedImages.push(imagePayload);
+                  imagePayloads.push(imagePayload);
+                }
+                body.image = imagePayloads.map((item) => item.url);
               }
               if (maskFile) {
                 const maskPayload = await createImageReferencePayload(maskFile, "蒙版图");
@@ -5947,8 +6096,11 @@
             });
           };
 
-          const callAiReferenceGenerate = async ({ file, promptText, ratioInfo, strongFidelityMode = false }) => {
-            const image = await loadImageFromFile(file);
+          const callAiReferenceGenerate = async ({ file, files = [], promptText, ratioInfo, strongFidelityMode = false }) => {
+            const referenceFiles = Array.isArray(files) && files.length ? files.filter(Boolean) : (file ? [file] : []);
+            const primaryFile = referenceFiles[0];
+            if (!primaryFile) throw new Error("缺少参考图");
+            const image = await loadImageFromFile(primaryFile);
             const ratioValue = ratioInfo?.value || image.width / image.height || 1;
             const nextRatioInfo = {
               ...(ratioInfo || {}),
@@ -5963,7 +6115,7 @@
                 strongFidelityMode
               }),
               ratioInfo: nextRatioInfo,
-              referenceFile: file,
+              referenceFiles,
               logPrefix: "reference_generate",
               requestLabel: promptText ? "参考图+文字请求" : "参考图请求"
             });
@@ -6085,22 +6237,29 @@
             }
           };
 
-          const generateWithReference = async ({ promptText, referenceFile, ratioInfo, controlSignals = null }) => {
+          const generateWithReference = async ({ promptText, referenceFile = null, referenceFiles = [], ratioInfo, controlSignals = null }) => {
             ratioBusy.value = true;
             showStatus(`正在处理参考图（${ratioInfo.label}）...`, "normal");
             const startedAt = performance.now();
             const strongFidelityMode = Boolean(controlSignals?.strongFidelityMode);
             const effectiveKeepStyle = getEffectiveKeepStyle() && !strongFidelityMode;
+            const effectiveReferenceFiles = Array.isArray(referenceFiles) && referenceFiles.length
+              ? referenceFiles.filter(Boolean)
+              : (referenceFile ? [referenceFile] : []);
+            const primaryReferenceFile = effectiveReferenceFiles[0] || null;
+            if (!primaryReferenceFile) throw new Error("缺少参考图");
             logProcess("reference_generation_started", {
               ratio: ratioInfo.label,
               keepStyle: getEffectiveKeepStyle(),
               effectiveKeepStyle,
               strongFidelityMode,
-              fileName: referenceFile?.name || "reference.png"
+              fileName: primaryReferenceFile?.name || "reference.png",
+              imageCount: effectiveReferenceFiles.length
             });
 
             try {
-              let workingFile = referenceFile;
+              let workingFile = primaryReferenceFile;
+              let workingFiles = effectiveReferenceFiles;
               let mode = "reference";
               let finalOutput = null;
               const shouldApplyRatioLocally = !String(promptText || "").trim() && ratioInfo?.value && ratioInfo.shouldApplyToReference;
@@ -6117,12 +6276,13 @@
                   `ratio_pre_${Date.now()}.png`,
                   { type: "image/png" }
                 );
+                workingFiles = [workingFile];
               }
 
               const shouldRunReferenceAi = Boolean(promptText) || mode === "reference";
               if (!finalOutput && shouldRunReferenceAi) {
                 finalOutput = await callAiReferenceGenerate({
-                  file: workingFile,
+                  files: workingFiles,
                   promptText,
                   ratioInfo,
                   strongFidelityMode
@@ -6178,6 +6338,29 @@
 
           const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
+          const startTaskClock = () => {
+            if (taskClockTimer) return;
+            taskClockNow.value = Date.now();
+            taskClockTimer = window.setInterval(() => {
+              taskClockNow.value = Date.now();
+            }, 1000);
+          };
+
+          const stopTaskClock = () => {
+            if (!taskClockTimer) return;
+            window.clearInterval(taskClockTimer);
+            taskClockTimer = null;
+          };
+
+          watch(runningTaskCount, (count) => {
+            if (count > 0) {
+              startTaskClock();
+            } else {
+              taskClockNow.value = Date.now();
+              stopTaskClock();
+            }
+          });
+
           watch(aiDialogVisible, (visible) => {
             syncAiDialogDocumentState();
             if (visible) {
@@ -6197,6 +6380,7 @@
             loadLocalWorkspace();
             loadPromptGallery();
             syncAiDialogDocumentState();
+            if (runningTaskCount.value > 0) startTaskClock();
             window.addEventListener("wheel", handleAiDialogWheel, { passive: false, capture: true });
             window.addEventListener("touchstart", handleAiDialogTouchStart, { passive: true, capture: true });
             window.addEventListener("touchmove", handleAiDialogTouchMove, { passive: false, capture: true });
@@ -6222,6 +6406,7 @@
             window.removeEventListener("scroll", handlePromptGalleryScroll);
             if (promptGalleryScrollTimer) window.clearTimeout(promptGalleryScrollTimer);
             if (chatCollapseTimer) window.clearTimeout(chatCollapseTimer);
+            stopTaskClock();
           });
 
           return {
@@ -6308,6 +6493,7 @@
             toggleRatioMenu,
             selectRatio,
             handlePromptGalleryWheel,
+            formatTaskTitle,
           };
         }
       }).mount("#app");
