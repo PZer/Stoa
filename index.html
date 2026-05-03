@@ -697,12 +697,11 @@
     .app.ai-dialog-active .prompt-card:hover,
     .app.ai-dialog-active .prompt-card:focus-visible {
       transform: none;
-      border-color: rgba(255, 255, 255, 0.18);
+      border-color: rgba(255, 255, 255, 0.42);
       box-shadow:
-        0 16px 36px rgba(70, 108, 150, 0.18),
-        0 1px 0 rgba(255, 255, 255, 0.34),
-        inset 0 1px 0 rgba(255, 255, 255, 0.48),
-        inset 0 -1px 0 rgba(255, 255, 255, 0.18);
+        0 0 0 1px rgba(255, 255, 255, 0.18),
+        0 14px 34px rgba(42, 55, 74, 0.18),
+        0 4px 12px rgba(255, 255, 255, 0.1);
     }
 
     .field {
@@ -1532,8 +1531,8 @@
 
     .bg-overlay::before {
       background: url("./prompt-gallery/base-layer-bg-3.jpg") center / cover fixed no-repeat;
-      filter: blur(14px);
-      transform: scale(1.04);
+      filter: blur(8px);
+      transform: scale(1.025);
       transform-origin: center;
     }
 
@@ -1730,16 +1729,15 @@
       min-height: 0;
       aspect-ratio: auto;
       flex: none;
-      border: 1px solid rgba(255, 255, 255, 0.18);
-      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.42);
+      border-radius: 20px;
       background:
-        linear-gradient(150deg, rgba(255, 255, 255, 0.42), rgba(255, 255, 255, 0.16) 42%, rgba(255, 255, 255, 0.08)),
-        rgba(220, 237, 255, 0.28);
+        linear-gradient(145deg, rgba(255, 255, 255, 0.18), rgba(225, 234, 246, 0.08)),
+        rgba(226, 234, 244, 0.1);
       box-shadow:
-        0 16px 36px rgba(70, 108, 150, 0.18),
-        0 1px 0 rgba(255, 255, 255, 0.34),
-        inset 0 1px 0 rgba(255, 255, 255, 0.48),
-        inset 0 -1px 0 rgba(255, 255, 255, 0.18);
+        0 0 0 1px rgba(255, 255, 255, 0.18),
+        0 14px 34px rgba(42, 55, 74, 0.18),
+        0 4px 12px rgba(255, 255, 255, 0.1);
       backdrop-filter: none;
       overflow: hidden;
     }
@@ -1754,25 +1752,34 @@
     }
 
     .prompt-card::before {
-      z-index: 2;
+      z-index: 6;
       background:
-        linear-gradient(128deg, rgba(255, 255, 255, 0.52), rgba(255, 255, 255, 0.13) 17%, transparent 35%),
-        linear-gradient(310deg, rgba(168, 226, 255, 0.24), transparent 42%),
-        linear-gradient(88deg, transparent 0 34%, rgba(255, 255, 255, 0.16) 45%, transparent 56%),
-        radial-gradient(circle at 22% 10%, rgba(255, 255, 255, 0.2), transparent 32%);
-      opacity: 0.72;
-      mix-blend-mode: screen;
+        radial-gradient(circle at 10% 8%, rgba(255, 255, 255, 0.95) 0 1px, rgba(255, 255, 255, 0.46) 1px 2px, transparent 3px),
+        radial-gradient(circle at 91% 12%, rgba(255, 255, 255, 0.72) 0 1px, transparent 3px),
+        radial-gradient(circle at 12% 88%, rgba(255, 255, 255, 0.58) 0 1px, transparent 3px),
+        radial-gradient(circle at 86% 86%, rgba(255, 255, 255, 0.5) 0 1px, transparent 3px),
+        linear-gradient(90deg, transparent 6%, rgba(255, 255, 255, 0.76) 18%, transparent 34%, transparent 66%, rgba(255, 255, 255, 0.42) 84%, transparent 96%) top left / 100% 2px no-repeat,
+        linear-gradient(90deg, transparent 10%, rgba(255, 255, 255, 0.34) 28%, transparent 46%, transparent 62%, rgba(255, 255, 255, 0.64) 82%, transparent 96%) bottom left / 100% 2px no-repeat,
+        linear-gradient(180deg, transparent 8%, rgba(255, 255, 255, 0.66) 24%, transparent 42%, transparent 62%, rgba(255, 255, 255, 0.32) 84%, transparent 96%) top left / 2px 100% no-repeat,
+        linear-gradient(180deg, transparent 6%, rgba(255, 255, 255, 0.36) 22%, transparent 38%, transparent 58%, rgba(255, 255, 255, 0.62) 82%, transparent 96%) top right / 2px 100% no-repeat;
+      box-shadow:
+        inset 2px 2px 4px rgba(255, 255, 255, 0.42),
+        inset -1px -1px 3px rgba(32, 42, 58, 0.12),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.28),
+        inset 0 0 0 2px rgba(120, 136, 158, 0.06);
     }
 
     .prompt-card::after {
       z-index: 3;
-      inset: auto 9px 9px;
-      height: 44%;
-      border-radius: 12px;
       background:
-        linear-gradient(to top, rgba(24, 44, 72, 0.42), rgba(255, 255, 255, 0.08) 72%, transparent),
-        linear-gradient(135deg, rgba(255, 255, 255, 0.18), transparent 42%);
-      opacity: 0.38;
+        radial-gradient(circle at 18% 10%, rgba(255, 255, 255, 0.28), transparent 30%),
+        radial-gradient(circle at 86% 54%, rgba(255, 255, 255, 0.08), transparent 24%),
+        radial-gradient(ellipse at center, transparent 66%, rgba(70, 86, 108, 0.08) 100%),
+        linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.05) 32%, rgba(218, 228, 242, 0.03) 58%, rgba(255, 255, 255, 0.1)),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.08), transparent 42%, rgba(148, 164, 186, 0.08)),
+        linear-gradient(0deg, rgba(8, 12, 18, 0.18), rgba(8, 12, 18, 0.1));
+      opacity: 0.58;
+      backdrop-filter: blur(0.35px) saturate(0.98);
       transition: opacity 170ms ease;
     }
 
@@ -1809,16 +1816,17 @@
     .prompt-card:hover,
     .prompt-card:focus-visible {
       z-index: 3;
-      transform: translateY(-2px) scale(1.015);
-      border-color: rgba(255, 255, 255, 0.45);
+      transform: translateY(-5px) scale(1.012);
+      border-color: rgba(255, 255, 255, 0.56);
       box-shadow:
-        0 18px 42px rgba(70, 108, 150, 0.22),
-        inset 0 1px 0 rgba(255, 255, 255, 0.38);
+        0 0 0 1px rgba(255, 255, 255, 0.24),
+        0 20px 48px rgba(42, 55, 74, 0.24),
+        0 8px 20px rgba(255, 255, 255, 0.12);
     }
 
     .prompt-card:hover::after,
     .prompt-card:focus-visible::after {
-      opacity: 0.82;
+      opacity: 0.64;
     }
 
     .prompt-card img {
@@ -1829,22 +1837,52 @@
       display: block;
       object-fit: cover;
       transform: scale(1.002);
-      filter: brightness(0.98) saturate(1.02) contrast(1);
+      filter: brightness(0.96) saturate(0.98) contrast(1.02);
       transition: transform 260ms ease, filter 260ms ease;
     }
 
     .prompt-card:hover img,
     .prompt-card:focus-visible img {
       transform: scale(1.038);
-      filter: brightness(0.98) saturate(1.08) contrast(1.04);
+      filter: brightness(0.99) saturate(1.04) contrast(1.04);
     }
 
     .prompt-card-body {
       z-index: 4;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      gap: 4px;
       opacity: 0.92;
-      padding: 56px 12px 12px;
+      padding: 80px 16px 16px;
+      background: linear-gradient(
+        to top,
+        rgba(18, 24, 36, 0.58) 0%,
+        rgba(42, 52, 68, 0.36) 38%,
+        rgba(255, 255, 255, 0.16) 74%,
+        transparent 100%
+      );
+      backdrop-filter: blur(0.6px);
       transform: translateY(0);
       transition: opacity 160ms ease, transform 160ms ease;
+    }
+
+    .prompt-card-title {
+      font-size: clamp(13px, 1.25vw, 18px);
+      font-weight: 800;
+      letter-spacing: 0.3px;
+      text-shadow: 0 2px 5px rgba(0, 0, 0, 0.58);
+    }
+
+    .prompt-card-meta {
+      color: rgba(255, 255, 255, 0.72);
+      font-size: clamp(11px, 0.9vw, 13px);
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+    }
+
+    .prompt-card.layout-feature .prompt-card-title,
+    .prompt-card.layout-wide .prompt-card-title {
+      font-size: clamp(15px, 1.55vw, 22px);
     }
 
     .prompt-card:hover .prompt-card-body,
@@ -2357,7 +2395,34 @@
       }
 
       .prompt-card {
-        border-radius: 12px;
+        border-radius: 14px;
+        box-shadow:
+          0 0 0 1px rgba(255, 255, 255, 0.18),
+          0 10px 24px rgba(42, 55, 74, 0.18),
+          0 3px 8px rgba(255, 255, 255, 0.08);
+      }
+
+      .prompt-card::after {
+        opacity: 0.48;
+        backdrop-filter: blur(0.25px) saturate(0.98);
+      }
+
+      .prompt-card:hover,
+      .prompt-card:focus-visible {
+        transform: translateY(-2px) scale(1.006);
+      }
+
+      .prompt-card-body {
+        padding: 46px 10px 10px;
+      }
+
+      .prompt-card-title {
+        font-size: 12px;
+        letter-spacing: 0.1px;
+      }
+
+      .prompt-card-meta {
+        font-size: 10px;
       }
 
       .prompt-card.layout-feature,
@@ -2673,14 +2738,15 @@
       z-index: 165;
       display: grid;
       place-items: center;
-      padding: 18px;
+      padding: 22px;
       background: rgba(4, 9, 18, 0.38);
       backdrop-filter: blur(10px);
     }
 
     .terms-card {
-      width: min(680px, calc(100vw - 28px));
-      max-height: min(82vh, 760px);
+      position: relative;
+      width: min(620px, calc(100vw - 36px));
+      max-height: min(72vh, 680px);
       display: grid;
       grid-template-rows: auto minmax(0, 1fr) auto;
       overflow: hidden;
@@ -2694,20 +2760,35 @@
       backdrop-filter: blur(24px) saturate(1.12);
     }
 
+    .terms-card-consent {
+      max-height: min(78vh, 720px);
+    }
+
     .terms-head,
     .terms-actions {
       display: flex;
       align-items: center;
       justify-content: space-between;
       gap: 14px;
-      padding: 18px 20px;
+      padding: 16px 18px;
       border-bottom: 1px solid rgba(255, 255, 255, 0.11);
+    }
+
+    .terms-head {
+      padding-right: 92px;
     }
 
     .terms-actions {
       justify-content: flex-end;
       border-top: 1px solid rgba(255, 255, 255, 0.11);
       border-bottom: 0;
+    }
+
+    .terms-close {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      z-index: 3;
     }
 
     .terms-head h3 {
@@ -2725,15 +2806,15 @@
 
     .terms-body {
       overflow: auto;
-      padding: 16px 20px 20px;
+      padding: 14px 18px 18px;
       display: grid;
-      gap: 13px;
+      gap: 11px;
     }
 
     .terms-item {
       border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 16px;
-      padding: 13px 14px;
+      border-radius: 14px;
+      padding: 11px 12px;
       background: rgba(255, 255, 255, 0.06);
     }
 
@@ -2790,23 +2871,50 @@
       }
 
       .terms-mask {
-        align-items: end;
-        padding: 14px;
+        place-items: center;
+        padding: 16px;
       }
 
       .terms-card {
-        width: 100%;
-        max-height: min(86vh, 760px);
+        width: min(520px, calc(100vw - 36px));
+        max-height: min(70dvh, calc(100dvh - 96px));
         border-radius: 22px;
+      }
+
+      .terms-card-consent {
+        max-height: min(78dvh, calc(100dvh - 64px));
       }
 
       .terms-head,
       .terms-actions {
-        padding: 15px 16px;
+        padding: 13px 14px;
+      }
+
+      .terms-head {
+        padding-right: 74px;
+      }
+
+      .terms-close {
+        top: 10px;
+        right: 10px;
       }
 
       .terms-body {
-        padding: 14px 16px 16px;
+        gap: 10px;
+        padding: 12px;
+      }
+
+      .terms-item {
+        padding: 10px 11px;
+      }
+
+      .terms-item h4 {
+        font-size: 13px;
+      }
+
+      .terms-item p {
+        font-size: 12.5px;
+        line-height: 1.58;
       }
     }
 
@@ -3319,6 +3427,49 @@
       border-color: rgba(0, 0, 0, 0.06);
       background: rgba(0, 0, 0, 0.08);
       color: #222222;
+    }
+
+    .chat-shell .send-btn {
+      position: relative;
+      overflow: hidden;
+      backdrop-filter: blur(4px);
+    }
+
+    .chat-shell .send-btn > span[aria-hidden="true"] {
+      display: none;
+    }
+
+    .chat-shell .send-btn::before {
+      content: "";
+      position: absolute;
+      top: 11px;
+      left: 50%;
+      width: 9px;
+      height: 9px;
+      border-top: 2.5px solid #4f5661;
+      border-left: 2.5px solid #4f5661;
+      border-top-left-radius: 2px;
+      transform: translateX(-50%) rotate(45deg);
+    }
+
+    .chat-shell .send-btn::after {
+      content: "";
+      position: absolute;
+      top: 13px;
+      left: 50%;
+      width: 2.5px;
+      height: 13px;
+      border-radius: 999px;
+      background: #4f5661;
+      transform: translateX(-50%);
+    }
+
+    .chat-shell .send-btn:hover:not(:disabled)::before {
+      border-color: #222222;
+    }
+
+    .chat-shell .send-btn:hover:not(:disabled)::after {
+      background: #222222;
     }
 
     .top-actions .action-btn {
@@ -4054,13 +4205,13 @@
     </div>
 
     <div v-if="termsNoticeOpen" class="terms-mask" @click.self="closeTermsNotice">
-      <section class="terms-card" role="dialog" aria-modal="true" aria-labelledby="termsNoticeTitle">
+      <section :class="['terms-card', { 'terms-card-consent': termsNoticeRequiresConsent }]" role="dialog" aria-modal="true" aria-labelledby="termsNoticeTitle">
         <header class="terms-head">
           <div>
             <h3 id="termsNoticeTitle">常见问题与用户须知</h3>
             <p>{{ termsNoticeSubtitle }}</p>
           </div>
-          <button class="mini-btn panel-close" type="button" @click="closeTermsNotice">关闭</button>
+          <button class="mini-btn panel-close terms-close" type="button" @click="closeTermsNotice">关闭</button>
         </header>
         <div class="terms-body">
           <article v-for="item in termsNoticeItems" :key="item.question" class="terms-item">
@@ -4215,6 +4366,27 @@
             "输出目标：图像应符合主体、风格、光影和构图意图。"
           ].join("\n");
           const PROMPT_GALLERY_BATCH_SIZE = 36;
+          // 18 cards form a closed 5-column mosaic cycle, preventing desktop grid holes.
+          const PROMPT_GALLERY_LAYOUT_PATTERN = Object.freeze([
+            "layout-feature",
+            "layout-wide",
+            "layout-landscape",
+            "layout-landscape",
+            "layout-landscape",
+            "layout-landscape",
+            "layout-landscape",
+            "layout-landscape",
+            "layout-feature",
+            "layout-wide",
+            "layout-landscape",
+            "layout-landscape",
+            "layout-wide",
+            "layout-landscape",
+            "layout-feature",
+            "layout-landscape",
+            "layout-landscape",
+            "layout-landscape"
+          ]);
           const ratioOptions = [
             { label: "Auto", value: null, mode: "auto" },
             { label: "1:1", value: 1 },
@@ -5172,25 +5344,9 @@
             };
           };
 
-          const hashPromptCardId = (value) => {
-            const source = String(value || "");
-            let hash = 0;
-            for (let i = 0; i < source.length; i += 1) {
-              hash = (hash * 31 + source.charCodeAt(i)) >>> 0;
-            }
-            return hash;
-          };
-
-          const resolvePromptCardLayoutClass = (item, index) => {
-            const safeWidth = Math.max(1, Number(item?.width) || 1);
-            const safeHeight = Math.max(1, Number(item?.height) || 1);
-            const ratio = safeWidth / safeHeight;
-            const seed = hashPromptCardId(`${item?.id || "card"}_${index}`);
-            if (ratio >= 1.65) return "layout-wide";
-            if (ratio >= 1.18) return seed % 5 === 0 ? "layout-feature" : "layout-landscape";
-            if (ratio <= 0.68) return seed % 6 === 0 ? "layout-tall" : "layout-portrait";
-            if (ratio <= 0.84) return "layout-portrait";
-            return seed % 7 === 0 ? "layout-feature" : "layout-square";
+          const resolvePromptCardLayoutClass = (_item, index) => {
+            const patternIndex = index % PROMPT_GALLERY_LAYOUT_PATTERN.length;
+            return PROMPT_GALLERY_LAYOUT_PATTERN[patternIndex] || "layout-landscape";
           };
 
           const pickPromptGalleryItems = (items) => {
