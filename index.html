@@ -49,7 +49,7 @@
     .app::-webkit-scrollbar {
       width: 0;
       height: 0;
-      display: none;
+      display: none !important;
     }
 
     .sr-only {
@@ -2026,7 +2026,19 @@
       flex: 0 0 auto;
     }
 
+    .chat-shell .composer-help-btn {
+      width: 35px;
+      min-width: 35px;
+      height: 35px;
+      padding: 0;
+      justify-content: center;
+      font-weight: 900;
+      line-height: 1;
+      flex: 0 0 auto;
+    }
+
     .chat-shell .composer-redraw-toggle {
+      display: none !important;
       min-width: 82px;
       height: 35px;
       display: inline-flex;
@@ -2612,6 +2624,132 @@
       text-align: center;
     }
 
+    .auth-terms-card {
+      display: grid;
+      gap: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 16px;
+      padding: 12px 13px;
+      background: rgba(255, 255, 255, 0.07);
+      color: rgba(226, 236, 248, 0.82);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .auth-terms-check {
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      cursor: pointer;
+    }
+
+    .auth-terms-check input {
+      flex: 0 0 auto;
+      width: 16px;
+      height: 16px;
+      margin: 2px 0 0;
+      accent-color: #49c6d8;
+    }
+
+    .auth-terms-link {
+      width: fit-content;
+      border: 0;
+      padding: 0;
+      background: transparent;
+      color: #9ff4ff;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .auth-terms-link:hover {
+      text-decoration: underline;
+    }
+
+    .terms-mask {
+      position: fixed;
+      inset: 0;
+      z-index: 165;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      background: rgba(4, 9, 18, 0.38);
+      backdrop-filter: blur(10px);
+    }
+
+    .terms-card {
+      width: min(680px, calc(100vw - 28px));
+      max-height: min(82vh, 760px);
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 24px;
+      background:
+        radial-gradient(circle at 16% 0%, rgba(118, 188, 196, 0.18), transparent 36%),
+        rgba(22, 29, 42, 0.94);
+      color: var(--text);
+      box-shadow: 0 28px 90px rgba(0, 0, 0, 0.42);
+      backdrop-filter: blur(24px) saturate(1.12);
+    }
+
+    .terms-head,
+    .terms-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 18px 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.11);
+    }
+
+    .terms-actions {
+      justify-content: flex-end;
+      border-top: 1px solid rgba(255, 255, 255, 0.11);
+      border-bottom: 0;
+    }
+
+    .terms-head h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 850;
+    }
+
+    .terms-head p {
+      margin: 5px 0 0;
+      color: rgba(218, 226, 238, 0.72);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .terms-body {
+      overflow: auto;
+      padding: 16px 20px 20px;
+      display: grid;
+      gap: 13px;
+    }
+
+    .terms-item {
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 16px;
+      padding: 13px 14px;
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .terms-item h4 {
+      margin: 0 0 8px;
+      font-size: 14px;
+      line-height: 1.45;
+    }
+
+    .terms-item p {
+      margin: 6px 0 0;
+      color: rgba(226, 236, 248, 0.78);
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
     .auth-balance {
       display: flex;
       justify-content: space-between;
@@ -2649,6 +2787,26 @@
 
       .auth-mask {
         padding-top: max(72px, calc(env(safe-area-inset-top) + 72px));
+      }
+
+      .terms-mask {
+        align-items: end;
+        padding: 14px;
+      }
+
+      .terms-card {
+        width: 100%;
+        max-height: min(86vh, 760px);
+        border-radius: 22px;
+      }
+
+      .terms-head,
+      .terms-actions {
+        padding: 15px 16px;
+      }
+
+      .terms-body {
+        padding: 14px 16px 16px;
       }
     }
 
@@ -3317,12 +3475,14 @@
 
     /* Keep secondary menus aligned with the AI dialog light glass palette. */
     .auth-mask,
+    .terms-mask,
     .preview-mask {
       background: rgba(255, 255, 255, 0.08);
       backdrop-filter: blur(10px) saturate(0.95);
     }
 
     .auth-card,
+    .terms-card,
     .workspace-panel,
     .preview-panel,
     .ratio-menu,
@@ -3346,12 +3506,16 @@
     }
 
     .auth-head,
+    .terms-head,
+    .terms-actions,
     .workspace-panel-head,
     .preview-panel aside {
       border-color: rgba(255, 255, 255, 0.4);
     }
 
     .auth-head h3,
+    .terms-head h3,
+    .terms-item h4,
     .workspace-panel-head h3,
     .preview-panel h3,
     .prompt-preview-title,
@@ -3362,6 +3526,8 @@
     }
 
     .auth-head p,
+    .terms-head p,
+    .terms-item p,
     .workspace-panel-head p,
     .preview-panel p,
     .task-row-main p,
@@ -3388,6 +3554,8 @@
     }
 
     .auth-field,
+    .auth-terms-card,
+    .terms-item,
     .auth-balance,
     .task-row-card,
     .prompt-preview-meta {
@@ -3395,6 +3563,8 @@
     }
 
     .auth-balance,
+    .auth-terms-card,
+    .terms-item,
     .task-row-card,
     .prompt-preview-meta {
       border-color: rgba(255, 255, 255, 0.35);
@@ -3413,6 +3583,10 @@
 
     .auth-link {
       color: #555555;
+    }
+
+    .auth-terms-link {
+      color: #0057d8;
     }
 
     .auth-link:hover:not(:disabled) {
@@ -3816,7 +3990,7 @@
         <header class="auth-head">
           <div>
             <h3>{{ authTitle }}</h3>
-            <p>{{ authPanelMode === 'redeem' ? '输入兑换码增加算力值。' : '登录后才能提交生成任务。' }}</p>
+            <p>{{ authSubtitle }}</p>
           </div>
           <button class="mini-btn panel-close" type="button" @click="closeAuthPanel">关闭</button>
         </header>
@@ -3848,8 +4022,15 @@
             <span>确认密码</span>
             <input v-model="authForm.confirmPassword" type="password" autocomplete="new-password" placeholder="再次输入密码">
           </label>
+          <div class="auth-terms-card">
+            <label class="auth-terms-check">
+              <input v-model="authTermsAccepted" type="checkbox">
+              <span>我已阅读、理解并同意《常见问题与用户须知》，知晓图片本地保存、生成中刷新/关闭页面的风险、积分消耗规则以及生成内容使用责任。</span>
+            </label>
+            <button class="auth-terms-link" type="button" @click="openTermsNotice('consent')">查看完整《常见问题与用户须知》</button>
+          </div>
           <p v-if="authError" class="auth-error">{{ authError }}</p>
-          <button class="auth-submit" type="submit" :disabled="authBusy">{{ authBusy ? "注册中..." : "注册并登录" }}</button>
+          <button class="auth-submit" type="submit" :disabled="authBusy || !authTermsAccepted">{{ authBusy ? "注册中..." : "注册并登录" }}</button>
           <button class="auth-link" type="button" @click="openAuthPanel('login')">已有账号？去登录</button>
         </form>
 
@@ -3869,6 +4050,27 @@
           </button>
           <button v-if="!isLoggedIn" class="auth-link" type="button" @click="openAuthPanel('login')">去登录</button>
         </form>
+      </section>
+    </div>
+
+    <div v-if="termsNoticeOpen" class="terms-mask" @click.self="closeTermsNotice">
+      <section class="terms-card" role="dialog" aria-modal="true" aria-labelledby="termsNoticeTitle">
+        <header class="terms-head">
+          <div>
+            <h3 id="termsNoticeTitle">常见问题与用户须知</h3>
+            <p>{{ termsNoticeSubtitle }}</p>
+          </div>
+          <button class="mini-btn panel-close" type="button" @click="closeTermsNotice">关闭</button>
+        </header>
+        <div class="terms-body">
+          <article v-for="item in termsNoticeItems" :key="item.question" class="terms-item">
+            <h4>{{ item.question }}</h4>
+            <p v-for="line in item.answerLines" :key="line">{{ line }}</p>
+          </article>
+        </div>
+        <footer v-if="termsNoticeRequiresConsent" class="terms-actions">
+          <button class="auth-submit" type="button" @click="acceptTermsNotice">我已理解并同意</button>
+        </footer>
       </section>
     </div>
 
@@ -3933,6 +4135,13 @@
                   <span>{{ composerRatioLabel }}</span>
                 </button>
               </div>
+              <button
+                class="mini-btn composer-help-btn"
+                type="button"
+                title="常见问题与用户须知"
+                aria-label="查看常见问题与用户须知"
+                @click="openTermsNotice"
+              >?</button>
               <label class="keep-style composer-redraw-toggle" title="开启后优先重绘参考图">
                 <input type="checkbox" v-model="keepStyle">
                 <span>重绘</span>
@@ -4029,6 +4238,56 @@
             "保持原图比例不变",
             "保持原比例不变"
           ]);
+          const TERMS_NOTICE_ITEMS = Object.freeze([
+            {
+              question: "Q1：我生成的图片会保存在网站服务器上吗？如果丢失了怎么办？",
+              answerLines: [
+                "A1：本站不在服务器上保存任何图片。您生成的图片仅存储在您的本地设备中。请妥善保存您的作品，若因未及时保存导致图片丢失，本站概不负责。"
+              ]
+            },
+            {
+              question: "Q2：上传图片进行处理时，有什么数量和大小的限制吗？",
+              answerLines: [
+                "A2：有的。单次上传图片最多限制为 9 张，且每张图片大小不得超过 20MB。请确保您的上传文件在此限制范围内。"
+              ]
+            },
+            {
+              question: "Q3：在图片生成过程中，我可以刷新页面或关闭浏览器吗？",
+              answerLines: [
+                "A3：强烈建议不要！本站目前采用同步任务机制，如果您在生成任务进行时刷新页面、重新打开浏览器或进行任何导致网页重新加载的操作，正在进行的任务将会被取消，且系统依然会扣除相应的积分。因这类个人操作导致的积分损失，本站暂不负责退还。"
+              ]
+            },
+            {
+              question: "Q4：使用多张图片进行AI生成时，需要注意什么？如果不写提示词会怎样？",
+              answerLines: [
+                "A4：使用多图AI调用时，必须填写明确的提示词。否则会出现以下情况，请自行承担生成效果的责任：",
+                "无提示词 + 无选定比例：系统只会提取并重绘您上传的第一张图的元素。",
+                "无提示词 + 有选定比例：系统只会对您上传的第一张图进行比例重绘。",
+                "有提示词但内容不明确：可能会导致AI理解偏差，生成的图片效果不佳。"
+              ]
+            },
+            {
+              question: "Q5：如果我一次性上传了多张图片（比如5张），会同时生成5张新图片吗？",
+              answerLines: [
+                "A5：不会。无论您一次性上传多少张参考图，每一次提交都只会生成一张结果图片。"
+              ]
+            },
+            {
+              question: "Q6：网站的收费/积分消耗规则是怎样的？",
+              answerLines: [
+                "A6：本站的具体计费规则如下：",
+                "文生图（纯文本生成图片）：每次请求消耗 1 积分。",
+                "图生图（上传图片生成图片）：每次请求消耗 2 积分。",
+                "积分价值：1 积分折合人民币 0.1 元（1毛钱）。"
+              ]
+            },
+            {
+              question: "Q7：我可以使用生成的图片做任何事情吗？如果出现版权或使用纠纷谁负责？",
+              answerLines: [
+                "A7：您使用本站生成的图片所产生的所有用途及相关后果，均由您个人全权负责，与本站无关。请合法合规地使用AI生成的图片内容。"
+              ]
+            }
+          ]);
           const containsAnyKeyword = (text, keywords) => {
             const source = String(text || "").trim().toLowerCase();
             if (!source) return false;
@@ -4048,6 +4307,9 @@
           const authPanelOpen = ref(false);
           const authPanelMode = ref("login");
           const authBusy = ref(false);
+          const authTermsAccepted = ref(false);
+          const termsNoticeOpen = ref(false);
+          const termsNoticeMode = ref("review");
           const redeemBusy = ref(false);
           const authError = ref("");
           const redeemCode = ref("");
@@ -4126,6 +4388,20 @@
             if (authPanelMode.value === "redeem") return "兑换码";
             return "登录账号";
           });
+
+          const authSubtitle = computed(() => {
+            if (authPanelMode.value === "register") return "注册前请阅读并同意用户须知。";
+            if (authPanelMode.value === "redeem") return "输入兑换码增加算力值。";
+            return "登录后才能提交生成任务。";
+          });
+
+          const termsNoticeRequiresConsent = computed(() => termsNoticeMode.value === "consent");
+
+          const termsNoticeSubtitle = computed(() => (
+            termsNoticeRequiresConsent.value
+              ? "注册并使用前，请确认您已经理解以下内容。"
+              : "这里可随时查看本站使用限制、积分规则与图片保存说明。"
+          ));
 
           const sendButtonText = computed(() => {
             if (!isLoggedIn.value) return "请先登录";
@@ -4327,12 +4603,29 @@
             authForm.username = "";
             authForm.password = "";
             authForm.confirmPassword = "";
+            authTermsAccepted.value = false;
             authError.value = "";
+          };
+
+          const openTermsNotice = (mode = "review") => {
+            termsNoticeMode.value = mode === "consent" ? "consent" : "review";
+            termsNoticeOpen.value = true;
+          };
+
+          const closeTermsNotice = () => {
+            termsNoticeOpen.value = false;
+          };
+
+          const acceptTermsNotice = () => {
+            authTermsAccepted.value = true;
+            termsNoticeOpen.value = false;
           };
 
           const openAuthPanel = (mode = "login") => {
             authPanelMode.value = mode;
             authPanelOpen.value = true;
+            termsNoticeMode.value = mode === "register" ? "consent" : "review";
+            termsNoticeOpen.value = mode === "register";
             authError.value = mode === "redeem" && !isLoggedIn.value ? "请先登录后再兑换。" : "";
             activePanel.value = "";
           };
@@ -4352,6 +4645,7 @@
 
           const closeAuthPanel = () => {
             authPanelOpen.value = false;
+            termsNoticeOpen.value = false;
             authError.value = "";
           };
 
@@ -4769,6 +5063,10 @@
             }
             if (password !== confirmPassword) {
               authError.value = "两次输入的密码不一致。";
+              return;
+            }
+            if (!authTermsAccepted.value) {
+              authError.value = "请先阅读并同意《常见问题与用户须知》。";
               return;
             }
             authBusy.value = true;
@@ -6413,15 +6711,24 @@
             authPanelOpen,
             authPanelMode,
             authTitle,
+            authSubtitle,
             authForm,
             authBusy,
             authError,
+            authTermsAccepted,
+            termsNoticeOpen,
+            termsNoticeRequiresConsent,
+            termsNoticeSubtitle,
+            termsNoticeItems: TERMS_NOTICE_ITEMS,
             redeemCode,
             redeemBusy,
             isLoggedIn,
             currentUserName,
             creditBalanceLabel,
             openAuthPanel,
+            openTermsNotice,
+            closeTermsNotice,
+            acceptTermsNotice,
             openRedeemPurchase,
             resetComposer,
             closeAuthPanel,
