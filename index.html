@@ -4351,6 +4351,68 @@
             { label: "square", width: 1024, height: 1024, ratio: 1 },
             { label: "portrait", width: 1024, height: 1536, ratio: 1024 / 1536 }
           ]);
+          const AI_ERROR_DISPLAY_MAP = Object.freeze({
+            ai_content_policy_adult: {
+              title: "内容安全提示",
+              message: "这次生成请求包含平台无法处理的裸露、成人或性相关内容，请修改提示词后重试。",
+              suggestion: "可以改成穿着运动服、时尚服装或健身身材展示等安全描述。"
+            },
+            ai_content_policy_person: {
+              title: "人物安全提示",
+              message: "这次生成请求涉及平台无法处理的人物身份、肖像或名人相关内容，请调整描述后重试。",
+              suggestion: "可以改用非真实人物、原创角色，或只描述通用风格和服装特征。"
+            },
+            ai_content_policy_violence: {
+              title: "内容安全提示",
+              message: "这次生成请求包含平台无法处理的暴力、血腥、违法或危险内容，请修改提示词后重试。",
+              suggestion: "可以改成非血腥、非伤害性的动作场景或电影感氛围描述。"
+            },
+            ai_content_policy_safety: {
+              title: "内容安全提示",
+              message: "这次生成请求触发了平台内容安全限制，请调整提示词或参考图后重试。",
+              suggestion: "建议去掉敏感内容，改为安全的服装、场景、动作和风格描述。"
+            },
+            upstream_rate_limit: {
+              title: "生成服务繁忙",
+              message: "上游生图服务当前请求过多，请稍后再试。",
+              suggestion: "可以等待一两分钟后重试，或减少连续提交的任务数量。"
+            },
+            upstream_billing: {
+              title: "生成服务暂不可用",
+              message: "上游生图服务额度或计费状态异常，请稍后再试。",
+              suggestion: "本次失败不会消耗积分，如多次出现请联系管理员处理上游额度。"
+            },
+            upstream_auth: {
+              title: "生成服务配置异常",
+              message: "上游生图服务鉴权失败，请稍后再试或联系管理员。",
+              suggestion: "这通常与上游密钥、权限或路由配置有关。"
+            },
+            upstream_bad_request: {
+              title: "生成参数不支持",
+              message: "上游生图服务不支持这次请求的部分参数，请调整模型、比例或输入后重试。",
+              suggestion: "可以尝试减少参考图数量、切换比例，或简化提示词。"
+            },
+            upstream_unavailable: {
+              title: "生成服务暂时不可用",
+              message: "上游生图服务或代理链路暂时异常，请稍后重试。",
+              suggestion: "本次失败不会消耗积分；如果持续出现，可能需要检查代理或上游服务状态。"
+            },
+            unknown_generation_error: {
+              title: "图片生成失败",
+              message: "图片生成失败，请稍后重试。",
+              suggestion: "本次失败不会消耗积分，如持续出现请联系管理员并提供请求ID。"
+            },
+            rate_limited: {
+              title: "请求太频繁",
+              message: "请求太频繁，请稍后再试。",
+              suggestion: "可以等待一会儿再继续提交任务。"
+            }
+          });
+          const AI_ERROR_CATEGORY_DISPLAY_MAP = Object.freeze({
+            content_policy: AI_ERROR_DISPLAY_MAP.ai_content_policy_safety,
+            upstream: AI_ERROR_DISPLAY_MAP.upstream_unavailable,
+            unknown: AI_ERROR_DISPLAY_MAP.unknown_generation_error
+          });
           const IMAGE_WORKFLOW_SYSTEM_PROMPT = [
             "你是一个智能图像生成辅助引擎。",
             "多模态生成逻辑：纯文本可直接生成；参考图可选，若提供则结合图片与文本创作。",
@@ -5110,6 +5172,42 @@
             return `${WORKER_API_BASE}${suffix.startsWith("/") ? suffix : `/${suffix}`}`;
           };
 
+          const normalizeWorkerErrorDetail = (value, fallback = "请求失败") => {
+            if (value == null || value === "") return fallback;
+            if (typeof value === "string") return value;
+            if (typeof value === "object" && typeof value.message === "string") return value.message;
+            try {
+              return JSON.stringify(value);
+            } catch (error) {
+              return fallback;
+            }
+          };
+
+          const formatWorkerRefundHint = (billing) => {
+            const refunded = Number(billing?.refunded || 0);
+            if (!Number.isFinite(refunded) || refunded <= 0) return "";
+            return `积分已自动退回 ${refunded} 点。`;
+          };
+
+          const buildWorkerErrorMessage = ({ response, parsed, detail, requestId }) => {
+            const code = String(parsed?.code || "");
+            const category = String(parsed?.category || "");
+            const display = AI_ERROR_DISPLAY_MAP[code] || AI_ERROR_CATEGORY_DISPLAY_MAP[category] || null;
+            const title = String(parsed?.title || display?.title || "").trim();
+            const message = normalizeWorkerErrorDetail(detail, display?.message || response.statusText || "请求失败");
+            const suggestion = String(parsed?.suggestion || display?.suggestion || "").trim();
+            const refundHint = formatWorkerRefundHint(parsed?.billing || parsed?.details?.billing);
+            const requestSuffix = requestId ? `（请求ID：${requestId}）` : "";
+            if (code || category || display) {
+              return [
+                title ? `${title}：${message}` : message,
+                suggestion,
+                refundHint
+              ].filter(Boolean).join(" ") + requestSuffix;
+            }
+            return `后端 ${response.status}：${message}${requestSuffix}`;
+          };
+
           const workerApiRequest = async ({ path, method = "POST", body = null, auth = false }) => {
             if (auth && !isAuthExpiryValid(authExpiresAt.value)) {
               clearAuthState();
@@ -5163,8 +5261,13 @@
                 openAuthPanel("redeem");
                 throw new Error("算力值不足，请兑换后再生成");
               }
-              const requestSuffix = requestId ? `（请求ID：${requestId}）` : "";
-              throw new Error(`后端 ${response.status}：${detail}${requestSuffix}`);
+              const message = buildWorkerErrorMessage({ response, parsed, detail, requestId });
+              const error = new Error(message);
+              error.code = parsed?.code || "";
+              error.category = parsed?.category || "";
+              error.requestId = requestId;
+              error.httpStatus = response.status;
+              throw error;
             }
             return parsed;
           };
