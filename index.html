@@ -1754,10 +1754,6 @@
     .prompt-card::before {
       z-index: 6;
       background:
-        radial-gradient(circle at 10% 8%, rgba(255, 255, 255, 0.95) 0 1px, rgba(255, 255, 255, 0.46) 1px 2px, transparent 3px),
-        radial-gradient(circle at 91% 12%, rgba(255, 255, 255, 0.72) 0 1px, transparent 3px),
-        radial-gradient(circle at 12% 88%, rgba(255, 255, 255, 0.58) 0 1px, transparent 3px),
-        radial-gradient(circle at 86% 86%, rgba(255, 255, 255, 0.5) 0 1px, transparent 3px),
         linear-gradient(90deg, transparent 6%, rgba(255, 255, 255, 0.76) 18%, transparent 34%, transparent 66%, rgba(255, 255, 255, 0.42) 84%, transparent 96%) top left / 100% 2px no-repeat,
         linear-gradient(90deg, transparent 10%, rgba(255, 255, 255, 0.34) 28%, transparent 46%, transparent 62%, rgba(255, 255, 255, 0.64) 82%, transparent 96%) bottom left / 100% 2px no-repeat,
         linear-gradient(180deg, transparent 8%, rgba(255, 255, 255, 0.66) 24%, transparent 42%, transparent 62%, rgba(255, 255, 255, 0.32) 84%, transparent 96%) top left / 2px 100% no-repeat,
@@ -1772,8 +1768,6 @@
     .prompt-card::after {
       z-index: 3;
       background:
-        radial-gradient(circle at 18% 10%, rgba(255, 255, 255, 0.28), transparent 30%),
-        radial-gradient(circle at 86% 54%, rgba(255, 255, 255, 0.08), transparent 24%),
         radial-gradient(ellipse at center, transparent 66%, rgba(70, 86, 108, 0.08) 100%),
         linear-gradient(135deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.05) 32%, rgba(218, 228, 242, 0.03) 58%, rgba(255, 255, 255, 0.1)),
         linear-gradient(to bottom, rgba(255, 255, 255, 0.08), transparent 42%, rgba(148, 164, 186, 0.08)),
@@ -1783,34 +1777,22 @@
       transition: opacity 170ms ease;
     }
 
-    .prompt-card.layout-feature {
+    .prompt-card.mosaic-hero {
       grid-column: span 2;
       grid-row: span 4;
     }
 
-    .prompt-card.layout-wide {
+    .prompt-card.mosaic-wide {
       grid-column: span 2;
       grid-row: span 2;
     }
 
-    .prompt-card.layout-landscape {
+    .prompt-card.mosaic-tile,
+    .prompt-card.mosaic-short,
+    .prompt-card.mosaic-tall,
+    .prompt-card.mosaic-poster {
       grid-column: span 1;
       grid-row: span 2;
-    }
-
-    .prompt-card.layout-square {
-      grid-column: span 1;
-      grid-row: span 3;
-    }
-
-    .prompt-card.layout-portrait {
-      grid-column: span 1;
-      grid-row: span 4;
-    }
-
-    .prompt-card.layout-tall {
-      grid-column: span 1;
-      grid-row: span 5;
     }
 
     .prompt-card:hover,
@@ -1880,8 +1862,8 @@
       text-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
     }
 
-    .prompt-card.layout-feature .prompt-card-title,
-    .prompt-card.layout-wide .prompt-card-title {
+    .prompt-card.mosaic-hero .prompt-card-title,
+    .prompt-card.mosaic-wide .prompt-card-title {
       font-size: clamp(15px, 1.55vw, 22px);
     }
 
@@ -2340,13 +2322,26 @@
         padding: 0;
       }
 
-      .prompt-card.layout-feature,
-      .prompt-card.layout-wide {
+      .prompt-card.mosaic-hero {
         grid-column: span 2;
+        grid-row: span 3;
       }
 
-      .prompt-card.layout-tall {
-        grid-row: span 3;
+      .prompt-card.mosaic-wide {
+        grid-column: span 2;
+        grid-row: span 2;
+      }
+
+      .prompt-card.mosaic-tile,
+      .prompt-card.mosaic-short {
+        grid-column: span 1;
+        grid-row: span 2;
+      }
+
+      .prompt-card.mosaic-tall,
+      .prompt-card.mosaic-poster {
+        grid-column: span 1;
+        grid-row: span 4;
       }
 
 }
@@ -2425,28 +2420,26 @@
         font-size: 10px;
       }
 
-      .prompt-card.layout-feature,
-      .prompt-card.layout-wide,
-      .prompt-card.layout-landscape,
-      .prompt-card.layout-square,
-      .prompt-card.layout-portrait,
-      .prompt-card.layout-tall {
+      .prompt-card.mosaic-hero {
         grid-column: span 1;
+        grid-row: span 4;
       }
 
-      .prompt-card.layout-feature,
-      .prompt-card.layout-wide {
+      .prompt-card.mosaic-wide {
+        grid-column: span 2;
         grid-row: span 2;
       }
 
-      .prompt-card.layout-landscape,
-      .prompt-card.layout-square {
+      .prompt-card.mosaic-tile,
+      .prompt-card.mosaic-short {
+        grid-column: span 1;
         grid-row: span 2;
       }
 
-      .prompt-card.layout-portrait,
-      .prompt-card.layout-tall {
-        grid-row: span 3;
+      .prompt-card.mosaic-tall,
+      .prompt-card.mosaic-poster {
+        grid-column: span 1;
+        grid-row: span 4;
       }
 
       .chat-shell .input-area {
@@ -4368,24 +4361,24 @@
           const PROMPT_GALLERY_BATCH_SIZE = 36;
           // 18 cards form a closed 5-column mosaic cycle, preventing desktop grid holes.
           const PROMPT_GALLERY_LAYOUT_PATTERN = Object.freeze([
-            "layout-feature",
-            "layout-wide",
-            "layout-landscape",
-            "layout-landscape",
-            "layout-landscape",
-            "layout-landscape",
-            "layout-landscape",
-            "layout-landscape",
-            "layout-feature",
-            "layout-wide",
-            "layout-landscape",
-            "layout-landscape",
-            "layout-wide",
-            "layout-landscape",
-            "layout-feature",
-            "layout-landscape",
-            "layout-landscape",
-            "layout-landscape"
+            "mosaic-hero",
+            "mosaic-wide",
+            "mosaic-tile",
+            "mosaic-tall",
+            "mosaic-short",
+            "mosaic-poster",
+            "mosaic-tile",
+            "mosaic-tall",
+            "mosaic-hero",
+            "mosaic-wide",
+            "mosaic-short",
+            "mosaic-tile",
+            "mosaic-wide",
+            "mosaic-poster",
+            "mosaic-hero",
+            "mosaic-tall",
+            "mosaic-short",
+            "mosaic-tile"
           ]);
           const ratioOptions = [
             { label: "Auto", value: null, mode: "auto" },
@@ -5346,7 +5339,7 @@
 
           const resolvePromptCardLayoutClass = (_item, index) => {
             const patternIndex = index % PROMPT_GALLERY_LAYOUT_PATTERN.length;
-            return PROMPT_GALLERY_LAYOUT_PATTERN[patternIndex] || "layout-landscape";
+            return PROMPT_GALLERY_LAYOUT_PATTERN[patternIndex] || "mosaic-tile";
           };
 
           const pickPromptGalleryItems = (items) => {
