@@ -2759,6 +2759,11 @@
       max-height: min(78vh, 720px);
     }
 
+    .ambiguity-card {
+      width: min(520px, calc(100vw - 36px));
+      max-height: min(72vh, 620px);
+    }
+
     .terms-head,
     .terms-actions {
       display: flex;
@@ -2804,6 +2809,36 @@
       padding: 14px 18px 18px;
       display: grid;
       gap: 11px;
+    }
+
+    .ambiguity-body {
+      padding: 18px;
+      display: grid;
+      gap: 12px;
+      color: rgba(226, 236, 248, 0.82);
+      line-height: 1.6;
+      font-size: 14px;
+    }
+
+    .ambiguity-body p {
+      margin: 0;
+    }
+
+    .ambiguity-default-rule {
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 16px;
+      padding: 12px 13px;
+      background: rgba(255, 255, 255, 0.07);
+      font-size: 13px;
+    }
+
+    .ambiguity-actions {
+      justify-content: flex-end;
+    }
+
+    .ambiguity-actions .auth-submit {
+      width: auto;
+      padding: 0 18px;
     }
 
     .terms-item {
@@ -3658,6 +3693,7 @@
     /* Keep secondary menus aligned with the AI dialog light glass palette. */
     .auth-mask,
     .terms-mask,
+    .ambiguity-mask,
     .preview-mask {
       background: rgba(255, 255, 255, 0.08);
       backdrop-filter: blur(10px) saturate(0.95);
@@ -3665,6 +3701,7 @@
 
     .auth-card,
     .terms-card,
+    .ambiguity-card,
     .workspace-panel,
     .preview-panel,
     .ratio-menu,
@@ -3690,6 +3727,7 @@
     .auth-head,
     .terms-head,
     .terms-actions,
+    .ambiguity-actions,
     .workspace-panel-head,
     .preview-panel aside {
       border-color: rgba(255, 255, 255, 0.4);
@@ -3697,6 +3735,7 @@
 
     .auth-head h3,
     .terms-head h3,
+    .ambiguity-card h3,
     .terms-item h4,
     .workspace-panel-head h3,
     .preview-panel h3,
@@ -3709,6 +3748,8 @@
 
     .auth-head p,
     .terms-head p,
+    .ambiguity-body,
+    .ambiguity-body p,
     .terms-item p,
     .workspace-panel-head p,
     .preview-panel p,
@@ -3737,6 +3778,7 @@
 
     .auth-field,
     .auth-terms-card,
+    .ambiguity-default-rule,
     .terms-item,
     .auth-balance,
     .task-row-card,
@@ -3746,6 +3788,7 @@
 
     .auth-balance,
     .auth-terms-card,
+    .ambiguity-default-rule,
     .terms-item,
     .task-row-card,
     .prompt-preview-meta {
@@ -4269,6 +4312,25 @@
       </section>
     </div>
 
+    <div v-if="ambiguityDialogOpen" class="terms-mask ambiguity-mask" @click.self="returnToAmbiguityComposer">
+      <section class="terms-card ambiguity-card" role="dialog" aria-modal="true" aria-labelledby="ambiguityDialogTitle">
+        <header class="terms-head">
+          <div>
+            <h3 id="ambiguityDialogTitle">需求不够明确</h3>
+            <p>继续前请确认默认处理方式。</p>
+          </div>
+        </header>
+        <div class="ambiguity-body">
+          <p>{{ ambiguityDialogMessage }}</p>
+          <p class="ambiguity-default-rule">{{ ambiguityDialogDefaultRule }}</p>
+        </div>
+        <footer class="terms-actions ambiguity-actions">
+          <button class="mini-btn" type="button" @click="returnToAmbiguityComposer">返回修改</button>
+          <button class="auth-submit" type="button" @click="continueAmbiguousGeneration">继续生成</button>
+        </footer>
+      </section>
+    </div>
+
     <main class="main">
       <section class="main-board">
         <section v-if="promptGalleryItems.length" class="prompt-gallery-strip" aria-label="GPT Image 2 prompts 灵感图廊">
@@ -4538,10 +4600,9 @@
             {
               question: "Q4：使用多张图片进行AI生成时，需要注意什么？如果不写提示词会怎样？",
               answerLines: [
-                "A4：使用多图AI调用时，必须填写明确的提示词。否则会出现以下情况，请自行承担生成效果的责任：",
-                "无提示词 + 无选定比例：系统只会提取并重绘您上传的第一张图的元素。",
-                "无提示词 + 有选定比例：系统只会对您上传的第一张图进行比例重绘。",
-                "有提示词但内容不明确：可能会导致AI理解偏差，生成的图片效果不佳。"
+                "A4：使用多图AI调用时，请尽量说明哪张是目标图、哪些图片提供元素或风格。",
+                "如果系统无法判断目标图或操作方式，会在生成前提示您确认；继续后将默认第 1 张为目标图，其余图片作为参考素材。",
+                "如果提示词明确是融合、合成或重新创作，则不会默认第 1 张为目标图，而会把所有上传图片作为参考素材。"
               ]
             },
             {
@@ -4605,6 +4666,8 @@
           const outputMessages = ref([]);
           const outputMessageContainer = ref(null);
           const aiDialogOpen = ref(false);
+          const ambiguityDialogOpen = ref(false);
+          const pendingAmbiguousTask = ref(null);
           const activePanel = ref("");
           const tasks = ref([]);
           const galleryImages = ref([]);
@@ -4679,6 +4742,16 @@
             termsNoticeRequiresConsent.value
               ? "注册并使用前，请确认您已经理解以下内容。"
               : "这里可随时查看本站使用限制、积分规则与图片保存说明。"
+          ));
+
+          const ambiguityDialogMessage = computed(() => (
+            pendingAmbiguousTask.value?.editPlan?.confirmationMessage
+            || "您的需求不够明确，生成结果可能有误。"
+          ));
+
+          const ambiguityDialogDefaultRule = computed(() => (
+            pendingAmbiguousTask.value?.editPlan?.defaultRule
+            || "如果继续，系统将默认第 1 张为目标图，其余图片作为参考素材，并根据提示词尽量完成编辑。"
           ));
 
           const sendButtonText = computed(() => {
@@ -6033,13 +6106,386 @@
             };
           };
 
-          const buildImagePrompt = ({ userText, ratioInfo, hasReference, strongFidelityMode = false }) => {
+          const IMAGE_ORDINAL_PATTERN = "([0-9]+|[一二三四五六七八九十两]+)";
+          const CHINESE_IMAGE_NUMBERS = Object.freeze({
+            一: 1,
+            二: 2,
+            三: 3,
+            四: 4,
+            五: 5,
+            六: 6,
+            七: 7,
+            八: 8,
+            九: 9
+          });
+
+          const imageOrdinalTokenToNumber = (value) => {
+            const text = String(value || "").trim().replace(/\s+/g, "").replace(/两/g, "二");
+            if (!text) return 0;
+            if (/^\d+$/.test(text)) return Number(text);
+            if (CHINESE_IMAGE_NUMBERS[text]) return CHINESE_IMAGE_NUMBERS[text];
+            const tenIndex = text.indexOf("十");
+            if (tenIndex >= 0) {
+              const left = text.slice(0, tenIndex);
+              const right = text.slice(tenIndex + 1);
+              const tens = left ? CHINESE_IMAGE_NUMBERS[left] : 1;
+              const ones = right ? CHINESE_IMAGE_NUMBERS[right] : 0;
+              if (!tens || (right && !ones)) return 0;
+              return tens * 10 + ones;
+            }
+            return 0;
+          };
+
+          const imageOrdinalTokenToIndex = (value, imageCount) => {
+            const number = imageOrdinalTokenToNumber(value);
+            if (!number || number < 1 || number > imageCount) return null;
+            return number - 1;
+          };
+
+          const extractImageMentionsFromPrompt = (text, imageCount) => {
+            const source = String(text || "");
+            const mentions = [];
+            const regex = /第\s*([0-9]+|[一二三四五六七八九十两]+)\s*(?:张|幅|个)?\s*(?:图片|照片|图)?|(?:图片|照片|图)\s*([0-9]+)/g;
+            let match = regex.exec(source);
+            while (match) {
+              const token = match[1] || match[2] || "";
+              const index = imageOrdinalTokenToIndex(token, imageCount);
+              if (index != null) {
+                mentions.push({ index, offset: match.index, text: match[0] });
+              }
+              match = regex.exec(source);
+            }
+            return mentions;
+          };
+
+          const uniqueImageIndexes = (indexes, imageCount) => {
+            const seen = new Set();
+            return (indexes || []).filter((index) => {
+              if (index == null || index === "") return false;
+              const safeIndex = Number(index);
+              if (!Number.isInteger(safeIndex) || safeIndex < 0 || safeIndex >= imageCount || seen.has(safeIndex)) return false;
+              seen.add(safeIndex);
+              return true;
+            });
+          };
+
+          const buildOrderedImageIndexes = ({ imageCount, targetImageIndex = null, sourceImageIndexes = [], targetLast = false }) => {
+            const ordered = [];
+            const add = (index) => {
+              const safeIndex = Number(index);
+              if (!Number.isInteger(safeIndex) || safeIndex < 0 || safeIndex >= imageCount || ordered.includes(safeIndex)) return;
+              ordered.push(safeIndex);
+            };
+            const safeSources = uniqueImageIndexes(sourceImageIndexes, imageCount)
+              .filter((index) => index !== targetImageIndex);
+            if (targetLast) {
+              safeSources.forEach(add);
+              for (let index = 0; index < imageCount; index += 1) {
+                if (index !== targetImageIndex) add(index);
+              }
+              if (targetImageIndex != null) add(targetImageIndex);
+              return ordered;
+            }
+            if (targetImageIndex != null) add(targetImageIndex);
+            safeSources.forEach(add);
+            for (let index = 0; index < imageCount; index += 1) add(index);
+            return ordered;
+          };
+
+          const hasTargetEditIntent = (text) => (
+            /(替换|更换|换成|换到|置换|添加|加入|加上|放到|放入|移除|去掉|删除|擦除|换背景|背景换|改成|改为|修改|编辑|处理一下|优化一下|修一下|调整一下)/i.test(String(text || ""))
+          );
+
+          const hasTransferIntent = (text) => (
+            /(换到|替换到|置换到|添加到|加到|加入到|放到|放入|移到|移动到|合成到|叠加到)/i.test(String(text || ""))
+          );
+
+          const hasClearFusionIntent = (text) => (
+            /(融合|合成|组合|拼合|拼成|混合|海报|新图|新场景|重新创作|创作一张|做成一张|生成一张[^，。,.]*?(包含|结合|融合)|把这些[^，。,.]*?(做成|生成|融合))/i.test(String(text || ""))
+          );
+
+          const isVagueMultiImagePrompt = (text) => {
+            const source = String(text || "").trim();
+            if (!source) return true;
+            return /(帮我处理|处理一下|优化一下|改好看|随便|参考这些图生成|参考这些图片生成|参考上传图|看着改|修一下|调整一下|帮我改)/i.test(source);
+          };
+
+          const inferExplicitImageIntent = (promptText, imageCount) => {
+            const source = String(promptText || "");
+            const mentions = extractImageMentionsFromPrompt(source, imageCount);
+            const resolveToken = (token) => imageOrdinalTokenToIndex(token, imageCount);
+            const patternSpecs = [
+              {
+                regex: new RegExp(`(?:把|将)\\s*第\\s*${IMAGE_ORDINAL_PATTERN}\\s*(?:张|幅|个)?\\s*(?:图片|照片|图)?[\\s\\S]{0,80}(?:换到|替换到|置换到|添加到|加到|加入到|放到|放入|移到|移动到|合成到|叠加到)\\s*第\\s*${IMAGE_ORDINAL_PATTERN}`, "i"),
+                targetGroup: 2,
+                sourceGroups: [1]
+              },
+              {
+                regex: new RegExp(`(?:用)\\s*第\\s*${IMAGE_ORDINAL_PATTERN}\\s*(?:张|幅|个)?\\s*(?:图片|照片|图)?[\\s\\S]{0,80}(?:替换|更换|置换)\\s*第\\s*${IMAGE_ORDINAL_PATTERN}`, "i"),
+                targetGroup: 2,
+                sourceGroups: [1]
+              },
+              {
+                regex: new RegExp(`(?:把|将)?\\s*第\\s*${IMAGE_ORDINAL_PATTERN}\\s*(?:张|幅|个)?\\s*(?:图片|照片|图)?[\\s\\S]{0,80}(?:换成|替换成|替换为|改成|改为|更换为|变成)\\s*第\\s*${IMAGE_ORDINAL_PATTERN}`, "i"),
+                targetGroup: 1,
+                sourceGroups: [2]
+              },
+              {
+                regex: new RegExp(`(?:给|在|对)\\s*第\\s*${IMAGE_ORDINAL_PATTERN}\\s*(?:张|幅|个)?\\s*(?:图片|照片|图)?[\\s\\S]{0,80}(?:添加|加入|加上|放入|移除|去掉|删除|擦除|更换|替换|换成|改成|改为|换背景|背景换)`, "i"),
+                targetGroup: 1,
+                sourceGroups: []
+              },
+              {
+                regex: new RegExp(`第\\s*${IMAGE_ORDINAL_PATTERN}\\s*(?:张|幅|个)?\\s*(?:图片|照片|图)?[\\s\\S]{0,50}(?:添加|加入|加上|换|改|删除|移除|去掉|修|调)`, "i"),
+                targetGroup: 1,
+                sourceGroups: []
+              }
+            ];
+
+            for (const spec of patternSpecs) {
+              const match = spec.regex.exec(source);
+              if (!match) continue;
+              const targetImageIndex = resolveToken(match[spec.targetGroup]);
+              if (targetImageIndex == null) continue;
+              let sourceImageIndexes = uniqueImageIndexes(spec.sourceGroups.map((group) => resolveToken(match[group])), imageCount)
+                .filter((index) => index !== targetImageIndex);
+              if (sourceImageIndexes.length && hasTransferIntent(source) && mentions.length > 1) {
+                const targetMention = [...mentions].reverse().find((item) => item.index === targetImageIndex);
+                if (targetMention) {
+                  const mentionedSources = uniqueImageIndexes(
+                    mentions
+                      .filter((item) => item.offset < targetMention.offset)
+                      .map((item) => item.index),
+                    imageCount
+                  ).filter((index) => index !== targetImageIndex);
+                  sourceImageIndexes = uniqueImageIndexes([...sourceImageIndexes, ...mentionedSources], imageCount);
+                }
+              }
+              return { targetImageIndex, sourceImageIndexes, mentions };
+            }
+
+            if (mentions.length >= 2 && hasTransferIntent(source)) {
+              const targetImageIndex = mentions[mentions.length - 1].index;
+              const sourceImageIndexes = uniqueImageIndexes(mentions.slice(0, -1).map((item) => item.index), imageCount)
+                .filter((index) => index !== targetImageIndex);
+              return { targetImageIndex, sourceImageIndexes, mentions };
+            }
+
+            if (mentions.length === 1 && hasTargetEditIntent(source)) {
+              return { targetImageIndex: mentions[0].index, sourceImageIndexes: [], mentions };
+            }
+
+            return { targetImageIndex: null, sourceImageIndexes: [], mentions };
+          };
+
+          const imageIndexLabel = (index) => `第 ${Number(index) + 1} 张`;
+
+          const summarizeEditPlan = (plan) => {
+            if (!plan?.imageCount) return "纯文本生成";
+            if (plan.kind === "multi_reference_fusion") return `多图融合：${plan.imageCount} 张图均作为参考素材`;
+            if (plan.kind === "target_edit") {
+              const sources = uniqueImageIndexes(plan.sourceImageIndexes || [], plan.imageCount)
+                .filter((index) => index !== plan.targetImageIndex)
+                .map(imageIndexLabel);
+              return `目标图：${imageIndexLabel(plan.targetImageIndex)}；参考图：${sources.length ? sources.join("、") : "无明确来源图"}`;
+            }
+            return plan.imageCount === 1 ? "单图参考生成" : `${plan.imageCount} 张参考图生成`;
+          };
+
+          const createMultiImageEditPlan = ({ promptText, attachmentsSnapshot, forceDefaultTarget = false }) => {
+            const imageCount = Array.isArray(attachmentsSnapshot) ? attachmentsSnapshot.length : 0;
+            const basePlan = {
+              version: 1,
+              kind: imageCount ? "single_reference" : "text_to_image",
+              imageCount,
+              targetImageIndex: imageCount === 1 ? 0 : null,
+              sourceImageIndexes: [],
+              orderedImageIndexes: Array.from({ length: imageCount }, (_, index) => index),
+              needsConfirmation: false,
+              confirmedDefaultTarget: false,
+              confirmationMessage: "",
+              defaultRule: "",
+              summary: ""
+            };
+            if (imageCount <= 1) {
+              basePlan.summary = summarizeEditPlan(basePlan);
+              return basePlan;
+            }
+
+            const cleanPrompt = String(promptText || "").trim();
+            const explicit = inferExplicitImageIntent(cleanPrompt, imageCount);
+            if (explicit.targetImageIndex != null) {
+              const sourceImageIndexes = explicit.sourceImageIndexes.length
+                ? explicit.sourceImageIndexes
+                : uniqueImageIndexes(explicit.mentions.map((item) => item.index), imageCount).filter((index) => index !== explicit.targetImageIndex);
+              const plan = {
+                ...basePlan,
+                kind: "target_edit",
+                targetImageIndex: explicit.targetImageIndex,
+                sourceImageIndexes,
+                orderedImageIndexes: buildOrderedImageIndexes({
+                  imageCount,
+                  targetImageIndex: explicit.targetImageIndex,
+                  sourceImageIndexes,
+                  targetLast: sourceImageIndexes.length > 0
+                })
+              };
+              plan.summary = summarizeEditPlan(plan);
+              return plan;
+            }
+
+            const clearFusion = hasClearFusionIntent(cleanPrompt) && !hasTargetEditIntent(cleanPrompt);
+            if (clearFusion) {
+              const plan = {
+                ...basePlan,
+                kind: "multi_reference_fusion",
+                targetImageIndex: null,
+                orderedImageIndexes: Array.from({ length: imageCount }, (_, index) => index)
+              };
+              plan.summary = summarizeEditPlan(plan);
+              return plan;
+            }
+
+            const needsDefaultTarget = hasTargetEditIntent(cleanPrompt) || isVagueMultiImagePrompt(cleanPrompt);
+            if (needsDefaultTarget) {
+              const sourceImageIndexes = Array.from({ length: imageCount - 1 }, (_, index) => index + 1);
+              const plan = {
+                ...basePlan,
+                kind: "target_edit",
+                targetImageIndex: 0,
+                sourceImageIndexes,
+                orderedImageIndexes: buildOrderedImageIndexes({
+                  imageCount,
+                  targetImageIndex: 0,
+                  sourceImageIndexes,
+                  targetLast: sourceImageIndexes.length > 0
+                }),
+                needsConfirmation: !forceDefaultTarget,
+                confirmedDefaultTarget: Boolean(forceDefaultTarget),
+                confirmationMessage: "您的需求不够明确，生成结果可能有误。",
+                defaultRule: "如果继续，系统将默认第 1 张为目标图，其余图片作为参考素材，并根据提示词尽量完成编辑。"
+              };
+              plan.summary = summarizeEditPlan(plan);
+              return plan;
+            }
+
+            const plan = {
+              ...basePlan,
+              kind: "multi_reference_fusion",
+              targetImageIndex: null,
+              orderedImageIndexes: Array.from({ length: imageCount }, (_, index) => index)
+            };
+            plan.summary = summarizeEditPlan(plan);
+            return plan;
+          };
+
+          const buildDefaultMultiImagePrompt = (editPlan) => {
+            if (!editPlan || editPlan.imageCount <= 1) return FIRST_IMAGE_AUTO_PROMPT;
+            if (editPlan.kind === "multi_reference_fusion") {
+              return "参考所有上传图片，融合主要元素重新创作一张新图，但不要直接复制任一原图构图。";
+            }
+            if (editPlan.kind === "target_edit") {
+              return `以${imageIndexLabel(editPlan.targetImageIndex)}为目标图，参考其余图片进行合理编辑，保留目标图未涉及区域。`;
+            }
+            return FIRST_IMAGE_AUTO_PROMPT;
+          };
+
+          const buildEditPlanPromptInstruction = (editPlan) => {
+            if (!editPlan?.imageCount || editPlan.imageCount <= 1) return "";
+            const ordered = Array.isArray(editPlan.orderedImageIndexes) && editPlan.orderedImageIndexes.length
+              ? editPlan.orderedImageIndexes
+              : Array.from({ length: editPlan.imageCount }, (_, index) => index);
+            if (editPlan.kind === "multi_reference_fusion") {
+              const roleLines = ordered.map((originalIndex, inputIndex) => (
+                `输入图 ${inputIndex + 1}（原${imageIndexLabel(originalIndex)}）是参考素材，可提取其中的人物、物体、背景、色调、姿势或风格。`
+              ));
+              return [
+                "[多图编辑计划]",
+                "当前任务没有目标画布，所有输入图都是参考素材。",
+                ...roleLines,
+                "请根据用户意图重新创作一张新图，融合指定元素，不要直接复制任一原图的完整构图。",
+                "只生成一张图。"
+              ].join("\n");
+            }
+            if (editPlan.kind === "target_edit") {
+              const targetIndex = Number(editPlan.targetImageIndex);
+              const sourceIndexes = uniqueImageIndexes(editPlan.sourceImageIndexes || [], editPlan.imageCount)
+                .filter((index) => index !== targetIndex);
+              const sourceLabels = sourceIndexes.map(imageIndexLabel);
+              const targetLabel = imageIndexLabel(targetIndex);
+              const roleLines = ordered.map((originalIndex, inputIndex) => {
+                if (originalIndex === targetIndex) {
+                  return `输入图 ${inputIndex + 1}（原${imageIndexLabel(originalIndex)}）是目标画布，最终结果必须以它的画幅、构图、场景、镜头视角、光照关系和未被用户点名要替换的区域为基准。`;
+                }
+                const listedSource = sourceIndexes.includes(originalIndex);
+                return `输入图 ${inputIndex + 1}（原${imageIndexLabel(originalIndex)}）是${listedSource ? "来源素材" : "辅助参考"}，只能提取用户明确要求转移、替换或新增的元素与特征，不要把它的整体场景、构图、身体、服装或背景当作目标画布。`;
+              });
+              return [
+                "[多图编辑计划]",
+                "注意：用户文字里的“第几张”指原始上传顺序；当前模型输入顺序已按下列角色重排，必须以下列角色为准。",
+                `目标画布：原${targetLabel}。${sourceLabels.length ? `来源素材：原${sourceLabels.join("、原")}。` : "没有明确来源素材，新增内容按文字描述生成。"}`,
+                ...roleLines,
+                "如果用户要求“把 A 换到/添加到/放到 B”，B 永远是目标画布；不要反向替换，不要把来源图重建为最终画面。",
+                "按用户意图执行添加、替换、移除、背景调整、风格迁移或元素融合；来源图只提供被点名的素材，新增元素若没有来源图，请按文字描述自然生成。",
+                "最终输出必须保留目标画布中未被用户要求修改的背景、主体部位、空间关系、比例和光照；只改用户指定的局部或元素。",
+                "只生成一张图。"
+              ].join("\n");
+            }
+            return "";
+          };
+
+          const buildImageRolePlanForRequest = (editPlan, inputImageCount = 0) => {
+            const count = Number(inputImageCount);
+            if (!editPlan?.imageCount || !Number.isInteger(count) || count <= 1) return null;
+            const originalCount = Number(editPlan.imageCount) || count;
+            const ordered = Array.isArray(editPlan.orderedImageIndexes) && editPlan.orderedImageIndexes.length
+              ? editPlan.orderedImageIndexes
+              : Array.from({ length: originalCount }, (_, index) => index);
+            const orderedImageIndexes = uniqueImageIndexes(ordered, originalCount).slice(0, count);
+            if (orderedImageIndexes.length !== count) {
+              for (let index = 0; index < originalCount && orderedImageIndexes.length < count; index += 1) {
+                if (!orderedImageIndexes.includes(index)) orderedImageIndexes.push(index);
+              }
+            }
+            const targetOriginalIndex = Number(editPlan.targetImageIndex);
+            const hasTarget = editPlan.kind === "target_edit"
+              && Number.isInteger(targetOriginalIndex)
+              && targetOriginalIndex >= 0
+              && targetOriginalIndex < originalCount;
+            const targetInputIndex = hasTarget ? orderedImageIndexes.indexOf(targetOriginalIndex) : -1;
+            const sourceOriginalIndexes = uniqueImageIndexes(editPlan.sourceImageIndexes || [], originalCount)
+              .filter((index) => !hasTarget || index !== targetOriginalIndex);
+            const sourceInputIndexes = sourceOriginalIndexes
+              .map((index) => orderedImageIndexes.indexOf(index))
+              .filter((index) => index >= 0);
+            const roleOrder = orderedImageIndexes.map((originalIndex, inputIndex) => {
+              if (inputIndex === targetInputIndex) return "target";
+              if (sourceInputIndexes.includes(inputIndex)) return "source";
+              return editPlan.kind === "multi_reference_fusion" ? "reference" : "source";
+            });
+            return {
+              version: 1,
+              kind: editPlan.kind || "single_reference",
+              imageCount: count,
+              originalImageCount: originalCount,
+              orderedImageIndexes,
+              targetOriginalIndex: hasTarget ? targetOriginalIndex : null,
+              sourceOriginalIndexes,
+              targetInputIndex: targetInputIndex >= 0 ? targetInputIndex : null,
+              sourceInputIndexes,
+              roleOrder,
+              summary: editPlan.summary || ""
+            };
+          };
+
+          const buildImagePrompt = ({ userText, ratioInfo, hasReference, strongFidelityMode = false, editPlan = null }) => {
             const promptText = String(userText || "").trim();
             const userIntent = promptText || "未提供文本，请基于参考图完成高质量创作。";
+            const editPlanInstruction = buildEditPlanPromptInstruction(editPlan);
             const referenceInstruction = hasReference
-              ? (strongFidelityMode
+              ? (editPlanInstruction || (strongFidelityMode
                 ? "[保真约束]\n保持参考图主体身份、脸部结构、发型、服饰、材质、光照、色调、镜头语言与构图关系一致；除非用户明确要求，不重绘整体风格，不替换主体，不改变主要场景元素。"
-                : "[参考图约束]\n必须以上传图片作为主要视觉参考，保留主体、构图关系、关键物体、材质、色调和场景特征；只根据用户意图做必要修改，不要脱离参考图重新创作。")
+                : "[参考图约束]\n必须以上传图片作为主要视觉参考，保留主体、构图关系、关键物体、材质、色调和场景特征；只根据用户意图做必要修改，不要脱离参考图重新创作。"))
               : "";
             return [
               IMAGE_WORKFLOW_SYSTEM_PROMPT,
@@ -6052,8 +6498,9 @@
             ].filter(Boolean).join("\n");
           };
 
-          const snapshotComposerAttachments = () => attachments.value.map((item) => ({
+          const snapshotComposerAttachments = () => attachments.value.map((item, index) => ({
             id: item.id,
+            originalIndex: index,
             name: item.name,
             dataUrl: item.dataUrl,
             size: item.size || 0,
@@ -6062,14 +6509,13 @@
             maskDataUrl: item.maskDataUrl || ""
           }));
 
-          const buildReferencePolicy = ({ promptText, attachmentsSnapshot, ratioSnapshot }) => {
+          const buildReferencePolicy = ({ promptText, attachmentsSnapshot, ratioSnapshot, editPlan = null }) => {
             const hasPrompt = Boolean(String(promptText || "").trim());
-            const hasFixedRatio = Boolean(ratioSnapshot?.value);
             const hasMultipleImages = (attachmentsSnapshot || []).length > 1;
             if (hasMultipleImages && !hasPrompt) {
               return {
-                useFirstImageOnly: true,
-                autoPrompt: hasFixedRatio ? "" : FIRST_IMAGE_AUTO_PROMPT
+                useFirstImageOnly: false,
+                autoPrompt: buildDefaultMultiImagePrompt(editPlan)
               };
             }
             return {
@@ -6081,6 +6527,15 @@
           const getTaskReferenceItems = (task) => {
             const items = Array.isArray(task?.attachmentsSnapshot) ? task.attachmentsSnapshot : [];
             if (!items.length) return [];
+            const orderedIndexes = Array.isArray(task?.editPlan?.orderedImageIndexes)
+              ? task.editPlan.orderedImageIndexes
+              : [];
+            if (orderedIndexes.length) {
+              const orderedItems = orderedIndexes
+                .map((index) => items[Number(index)])
+                .filter(Boolean);
+              if (orderedItems.length) return orderedItems;
+            }
             if (task?.referencePolicy?.useFirstImageOnly) return items.slice(0, 1);
             return items;
           };
@@ -6115,7 +6570,7 @@
             return false;
           };
 
-          const createGenerationTaskFromComposer = () => {
+          const createGenerationTaskFromComposer = ({ forceDefaultTarget = false } = {}) => {
             if (handleSubmitBlocked()) {
               return null;
             }
@@ -6135,12 +6590,17 @@
               return null;
             }
             const ratioSnapshot = getEffectiveSelectedRatio();
-            const referencePolicy = buildReferencePolicy({ promptText, attachmentsSnapshot, ratioSnapshot });
-            const effectiveInputImageCount = referencePolicy.useFirstImageOnly
-              ? Math.min(1, attachmentsSnapshot.length)
-              : attachmentsSnapshot.length;
+            const editPlan = createMultiImageEditPlan({
+              promptText,
+              attachmentsSnapshot,
+              forceDefaultTarget
+            });
+            const referencePolicy = buildReferencePolicy({ promptText, attachmentsSnapshot, ratioSnapshot, editPlan });
+            const effectiveInputImageCount = Array.isArray(editPlan.orderedImageIndexes) && editPlan.orderedImageIndexes.length
+              ? editPlan.orderedImageIndexes.length
+              : (referencePolicy.useFirstImageOnly ? Math.min(1, attachmentsSnapshot.length) : attachmentsSnapshot.length);
             const now = Date.now();
-            return {
+            const task = {
               id: createLocalId("task"),
               status: "queued",
               prompt: referencePolicy.autoPrompt || promptText || "参考图生成",
@@ -6150,6 +6610,7 @@
               selectedRatio: ratioSnapshot ? { ...ratioSnapshot } : { ...ratioOptions[0] },
               keepStyle: Boolean(keepStyle.value),
               referencePolicy,
+              editPlan,
               attachmentsSnapshot,
               inputImageCount: effectiveInputImageCount,
               estimatedCost: requiredCredits,
@@ -6158,6 +6619,13 @@
               createdAt: now,
               updatedAt: now
             };
+            if (editPlan.needsConfirmation) {
+              return {
+                needsConfirmation: true,
+                task
+              };
+            }
+            return task;
           };
 
           const executeQueuedTask = async (task) => {
@@ -6176,6 +6644,7 @@
             let referenceFile = null;
             let referenceFiles = [];
             const promptControlSignals = analyzePromptControlSignals(originalPromptText);
+            const editPlan = task.editPlan || null;
             const startedAt = Date.now();
 
             try {
@@ -6235,9 +6704,12 @@
               pushOutputMessage(promptText || "已上传参考图，请根据当前设置生成图片。", "normal", "user");
               pushOutputMessage("开始生成图片...", "system");
               pushOutputMessage(`Aspect Ratio：${ratioInfo.label}`, "system");
+              if (editPlan?.summary) {
+                pushOutputMessage(`多图计划：${editPlan.summary}`, "system");
+              }
 
               const generated = referenceFile
-                ? await generateWithReference({ promptText, referenceFiles, ratioInfo, controlSignals: promptControlSignals })
+                ? await generateWithReference({ promptText, referenceFiles, ratioInfo, controlSignals: promptControlSignals, editPlan })
                 : await generateFromText({ promptText, ratioInfo });
 
               if (!generated?.dataUrl) {
@@ -6310,9 +6782,16 @@
             }
           };
 
-          const sendMessage = async () => {
-            const task = createGenerationTaskFromComposer();
+          const enqueueGenerationTask = async (task) => {
             if (!task) return;
+            if (task.editPlan?.summary) {
+              logProcess("multi_image_edit_plan_ready", {
+                taskId: task.id,
+                summary: task.editPlan.summary,
+                kind: task.editPlan.kind,
+                orderedImageIndexes: task.editPlan.orderedImageIndexes || []
+              });
+            }
             activePanel.value = "tasks";
             await upsertTask(task);
             resetComposerAfterSubmit();
@@ -6320,6 +6799,39 @@
             runTaskQueue().catch((error) => {
               logProcess("task_queue_failed", { error: error.message || String(error) });
             });
+          };
+
+          const returnToAmbiguityComposer = () => {
+            ambiguityDialogOpen.value = false;
+            pendingAmbiguousTask.value = null;
+            showStatus("请补充目标图或编辑方式后再生成", "normal");
+          };
+
+          const continueAmbiguousGeneration = async () => {
+            const task = pendingAmbiguousTask.value;
+            if (!task) return;
+            if (task.editPlan) {
+              task.editPlan = {
+                ...task.editPlan,
+                needsConfirmation: false,
+                confirmedDefaultTarget: true
+              };
+            }
+            ambiguityDialogOpen.value = false;
+            pendingAmbiguousTask.value = null;
+            await enqueueGenerationTask(task);
+          };
+
+          const sendMessage = async () => {
+            const taskResult = createGenerationTaskFromComposer();
+            if (!taskResult) return;
+            if (taskResult.needsConfirmation) {
+              pendingAmbiguousTask.value = taskResult.task;
+              ambiguityDialogOpen.value = true;
+              showStatus("需求不够明确，请确认后继续", "normal");
+              return;
+            }
+            await enqueueGenerationTask(taskResult);
           };
           const computeTargetSize = (width, height, targetRatio) => {
             const sourceRatio = width / height;
@@ -6633,6 +7145,7 @@
             referenceFile = null,
             referenceFiles = [],
             maskFile = null,
+            editPlan = null,
             logPrefix,
             requestLabel
           }) => {
@@ -6660,6 +7173,8 @@
                   imagePayloads.push(imagePayload);
                 }
                 body.image = imagePayloads.map((item) => item.url);
+                const imageRolePlan = buildImageRolePlanForRequest(editPlan, imagePayloads.length);
+                if (imageRolePlan) body.image_role_plan = imageRolePlan;
               }
               if (maskFile) {
                 const maskPayload = await createImageReferencePayload(maskFile, "蒙版图");
@@ -6697,7 +7212,7 @@
             });
           };
 
-          const callAiReferenceGenerate = async ({ file, files = [], promptText, ratioInfo, strongFidelityMode = false }) => {
+          const callAiReferenceGenerate = async ({ file, files = [], promptText, ratioInfo, strongFidelityMode = false, editPlan = null }) => {
             const referenceFiles = Array.isArray(files) && files.length ? files.filter(Boolean) : (file ? [file] : []);
             const primaryFile = referenceFiles[0];
             if (!primaryFile) throw new Error("缺少参考图");
@@ -6713,10 +7228,12 @@
                 userText: promptText,
                 ratioInfo: nextRatioInfo,
                 hasReference: true,
-                strongFidelityMode
+                strongFidelityMode,
+                editPlan
               }),
               ratioInfo: nextRatioInfo,
               referenceFiles,
+              editPlan,
               logPrefix: "reference_generate",
               requestLabel: promptText ? "参考图+文字请求" : "参考图请求"
             });
@@ -6838,7 +7355,7 @@
             }
           };
 
-          const generateWithReference = async ({ promptText, referenceFile = null, referenceFiles = [], ratioInfo, controlSignals = null }) => {
+          const generateWithReference = async ({ promptText, referenceFile = null, referenceFiles = [], ratioInfo, controlSignals = null, editPlan = null }) => {
             ratioBusy.value = true;
             showStatus(`正在处理参考图（${ratioInfo.label}）...`, "normal");
             const startedAt = performance.now();
@@ -6886,7 +7403,8 @@
                   files: workingFiles,
                   promptText,
                   ratioInfo,
-                  strongFidelityMode
+                  strongFidelityMode,
+                  editPlan
                 });
                 mode = `${mode}+reference-edit`;
               } else {
@@ -7053,6 +7571,11 @@
             aiDialogOpen,
             aiDialogVisible,
             aiDialogTitle,
+            ambiguityDialogOpen,
+            ambiguityDialogMessage,
+            ambiguityDialogDefaultRule,
+            continueAmbiguousGeneration,
+            returnToAmbiguityComposer,
             activePanel,
             tasks,
             galleryImages,
