@@ -1,0 +1,3665 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LOAT Admin Console</title>
+  <link rel="icon" href="./assets/logo.png" type="image/png">
+  <script src="./vendor/vue.global.prod.js"></script>
+  <style>
+    :root {
+      --page: #050a12;
+      --panel: rgba(12, 18, 30, 0.78);
+      --panel-strong: rgba(15, 24, 38, 0.94);
+      --panel-soft: rgba(255, 255, 255, 0.055);
+      --line: rgba(189, 216, 255, 0.14);
+      --line-strong: rgba(157, 220, 236, 0.3);
+      --text: #eef6ff;
+      --muted: rgba(221, 233, 248, 0.68);
+      --faint: rgba(221, 233, 248, 0.46);
+      --accent: #6fe0f0;
+      --accent-2: #8db8ff;
+      --ok: #76e7ae;
+      --warn: #ffd36f;
+      --bad: #ff7d8e;
+      --shadow: 0 24px 70px rgba(0, 0, 0, 0.38);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-width: 320px;
+      width: 100%;
+      height: 100%;
+      min-height: 100%;
+      margin: 0;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--text);
+      background-color: var(--page);
+      background:
+        radial-gradient(circle at 20% 12%, rgba(75, 133, 191, 0.24), transparent 34%),
+        radial-gradient(circle at 80% 8%, rgba(67, 222, 204, 0.13), transparent 30%),
+        linear-gradient(155deg, #040813 0%, #09121d 44%, #071019 100%);
+    }
+
+    body {
+      overflow: hidden;
+    }
+
+    html::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background: var(--page);
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      color: inherit;
+    }
+
+    .admin-app {
+      position: relative;
+      display: grid;
+      grid-template-columns: 254px minmax(0, 1fr);
+      height: 100vh;
+      overflow: hidden;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 32%),
+        rgba(0, 0, 0, 0.06);
+    }
+
+    .admin-app.auth-app {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100vw;
+      min-height: 100vh;
+      min-height: 100dvh;
+      height: 100vh;
+      height: 100dvh;
+      overflow: auto;
+      padding: clamp(16px, 4vw, 28px);
+    }
+
+    .admin-auth-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100vw;
+      min-height: 100vh;
+      min-height: 100dvh;
+      height: 100vh;
+      height: 100dvh;
+      margin: 0;
+      overflow: auto;
+      padding: clamp(16px, 4vw, 28px);
+    }
+
+    .auth-card {
+      display: grid;
+      gap: 18px;
+      width: min(430px, calc(100vw - 40px));
+      max-height: calc(100dvh - 32px);
+      overflow: auto;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      padding: 20px;
+      background:
+        linear-gradient(180deg, rgba(18, 28, 44, 0.96), rgba(9, 15, 26, 0.94)),
+        var(--panel-strong);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(20px) saturate(1.12);
+    }
+
+    .auth-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .auth-brand img {
+      width: 42px;
+      height: 42px;
+      object-fit: contain;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .auth-brand strong {
+      display: block;
+      font-size: 18px;
+      letter-spacing: 0;
+    }
+
+    .auth-brand span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .auth-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 4px;
+      background: rgba(0, 0, 0, 0.16);
+    }
+
+    .auth-tabs button {
+      min-height: 36px;
+      border: 0;
+      border-radius: 6px;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 850;
+      cursor: pointer;
+    }
+
+    .auth-tabs button.active {
+      background: rgba(111, 224, 240, 0.16);
+      color: var(--text);
+    }
+
+    .auth-form {
+      display: grid;
+      gap: 13px;
+    }
+
+    .admin-app::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+      background-size: 72px 72px;
+      mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.54), transparent 72%);
+    }
+
+    .sidebar {
+      position: relative;
+      z-index: 2;
+      min-width: 0;
+      padding: 18px 14px;
+      border-right: 1px solid var(--line);
+      background:
+        linear-gradient(180deg, rgba(14, 22, 36, 0.96), rgba(8, 14, 24, 0.88)),
+        rgba(6, 10, 18, 0.8);
+      box-shadow: 12px 0 48px rgba(0, 0, 0, 0.24);
+      backdrop-filter: blur(20px) saturate(1.12);
+      overflow-y: auto;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      min-width: 0;
+      padding: 6px 6px 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .brand img {
+      width: 38px;
+      height: 38px;
+      object-fit: contain;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    .brand-title {
+      min-width: 0;
+    }
+
+    .brand-title strong {
+      display: block;
+      font-size: 15px;
+      letter-spacing: 0;
+    }
+
+    .brand-title span {
+      display: block;
+      margin-top: 2px;
+      color: var(--faint);
+      font-size: 12px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .nav {
+      display: grid;
+      gap: 6px;
+      margin-top: 18px;
+    }
+
+    .nav-button {
+      width: 100%;
+      min-height: 42px;
+      display: grid;
+      grid-template-columns: 30px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      padding: 7px 10px;
+      background: transparent;
+      color: rgba(232, 242, 255, 0.72);
+      cursor: pointer;
+      text-align: left;
+      transition: background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+    }
+
+    .nav-button:hover {
+      transform: translateX(2px);
+      border-color: rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.065);
+    }
+
+    .nav-button.active {
+      border-color: rgba(111, 224, 240, 0.34);
+      background:
+        linear-gradient(135deg, rgba(111, 224, 240, 0.14), rgba(141, 184, 255, 0.07)),
+        rgba(255, 255, 255, 0.05);
+      color: #f7fdff;
+      box-shadow: inset 3px 0 0 rgba(111, 224, 240, 0.82);
+    }
+
+    .nav-mark {
+      width: 30px;
+      height: 30px;
+      display: inline-grid;
+      place-items: center;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 7px;
+      background: rgba(255, 255, 255, 0.055);
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 850;
+      letter-spacing: 0;
+    }
+
+    .nav-text {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    .nav-count {
+      min-width: 24px;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: rgba(111, 224, 240, 0.14);
+      color: rgba(205, 249, 255, 0.88);
+      font-size: 11px;
+      text-align: center;
+    }
+
+    .sidebar-footer {
+      margin-top: 18px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background:
+        linear-gradient(145deg, rgba(111, 224, 240, 0.11), rgba(255, 255, 255, 0.04)),
+        rgba(255, 255, 255, 0.035);
+    }
+
+    .sidebar-footer span {
+      display: block;
+      color: var(--faint);
+      font-size: 11px;
+    }
+
+    .sidebar-footer strong {
+      display: block;
+      margin-top: 5px;
+      color: var(--accent);
+      font-size: 13px;
+    }
+
+    .workspace {
+      position: relative;
+      z-index: 1;
+      min-width: 0;
+      overflow: auto;
+      padding: 20px 22px 28px;
+    }
+
+    .topbar {
+      min-height: 72px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+
+    .admin-session {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .kicker {
+      margin: 0 0 6px;
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin-top: 0;
+    }
+
+    h1 {
+      margin-bottom: 7px;
+      font-size: clamp(26px, 3vw, 36px);
+      line-height: 1.06;
+      letter-spacing: 0;
+    }
+
+    .page-desc {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .search-control,
+    .field {
+      display: grid;
+      gap: 7px;
+      color: var(--faint);
+      font-size: 12px;
+      font-weight: 750;
+    }
+
+    .search-control {
+      width: min(320px, 34vw);
+    }
+
+    input,
+    select,
+    textarea {
+      min-height: 38px;
+      width: 100%;
+      border: 1px solid rgba(255, 255, 255, 0.13);
+      border-radius: 8px;
+      padding: 8px 11px;
+      background: rgba(4, 9, 17, 0.7);
+      color: var(--text);
+      outline: none;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035);
+    }
+
+    textarea {
+      min-height: 94px;
+      resize: vertical;
+      line-height: 1.55;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: rgba(111, 224, 240, 0.52);
+      box-shadow: 0 0 0 3px rgba(111, 224, 240, 0.11);
+    }
+
+    .check-row {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .check-row input {
+      width: 18px;
+      min-height: 18px;
+      height: 18px;
+      padding: 0;
+      accent-color: var(--accent);
+    }
+
+    .ghost-btn,
+    .primary-btn,
+    .danger-btn {
+      min-height: 38px;
+      border-radius: 8px;
+      padding: 8px 13px;
+      font-size: 13px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+    }
+
+    .ghost-btn {
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.06);
+      color: rgba(235, 244, 255, 0.82);
+    }
+
+    .primary-btn {
+      border: 1px solid rgba(111, 224, 240, 0.44);
+      background:
+        linear-gradient(135deg, rgba(111, 224, 240, 0.3), rgba(141, 184, 255, 0.12)),
+        rgba(25, 68, 82, 0.74);
+      color: #f8fdff;
+    }
+
+    .danger-btn {
+      border: 1px solid rgba(255, 125, 142, 0.4);
+      background: rgba(255, 125, 142, 0.12);
+      color: #ffd6dc;
+    }
+
+    .ghost-btn:hover,
+    .primary-btn:hover,
+    .danger-btn:hover {
+      transform: translateY(-1px);
+      border-color: rgba(255, 255, 255, 0.28);
+    }
+
+    .ghost-btn:disabled,
+    .primary-btn:disabled,
+    .danger-btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.54;
+      transform: none;
+    }
+
+    .status-chip,
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 26px;
+      width: fit-content;
+      max-width: 100%;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 999px;
+      padding: 4px 9px;
+      background: rgba(255, 255, 255, 0.055);
+      color: rgba(238, 246, 255, 0.78);
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .status-chip::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: currentColor;
+      box-shadow: 0 0 16px currentColor;
+    }
+
+    .status-ok {
+      color: var(--ok);
+      border-color: rgba(118, 231, 174, 0.25);
+      background: rgba(118, 231, 174, 0.08);
+    }
+
+    .status-warn {
+      color: var(--warn);
+      border-color: rgba(255, 211, 111, 0.25);
+      background: rgba(255, 211, 111, 0.08);
+    }
+
+    .status-bad {
+      color: var(--bad);
+      border-color: rgba(255, 125, 142, 0.25);
+      background: rgba(255, 125, 142, 0.08);
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .metric {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      background:
+        linear-gradient(145deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.025)),
+        var(--panel);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px) saturate(1.08);
+    }
+
+    .metric span {
+      display: block;
+      color: var(--faint);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 8px;
+      font-size: clamp(24px, 3vw, 34px);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .metric small {
+      display: block;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .metric.good strong {
+      color: var(--ok);
+    }
+
+    .metric.warn strong {
+      color: var(--warn);
+    }
+
+    .content-grid {
+      display: grid;
+      gap: 12px;
+    }
+
+    .overview-grid {
+      grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.75fr);
+      align-items: start;
+    }
+
+    .panel {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background:
+        linear-gradient(150deg, rgba(255, 255, 255, 0.052), rgba(255, 255, 255, 0.02)),
+        var(--panel);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px) saturate(1.08);
+      overflow: hidden;
+    }
+
+    .panel-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .panel-head h2,
+    .panel-head h3 {
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+
+    .panel-head p {
+      margin: 5px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .panel-body {
+      padding: 16px;
+    }
+
+    .chart {
+      height: 252px;
+      padding: 4px 4px 0;
+    }
+
+    .line-chart {
+      width: 100%;
+      height: 100%;
+      display: block;
+      overflow: visible;
+    }
+
+    .chart-grid-line {
+      stroke: rgba(255, 255, 255, 0.08);
+      stroke-width: 1;
+    }
+
+    .chart-line {
+      fill: none;
+      stroke: var(--accent);
+      stroke-width: 3;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      filter: drop-shadow(0 0 10px rgba(111, 224, 240, 0.42));
+    }
+
+    .chart-area {
+      fill: url("#trendAreaGradient");
+      opacity: 0.74;
+    }
+
+    .chart-point {
+      fill: #071019;
+      stroke: var(--accent);
+      stroke-width: 2.5;
+    }
+
+    .chart-label {
+      fill: var(--faint);
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .chart-value {
+      fill: rgba(238, 246, 255, 0.82);
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .split-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 12px;
+    }
+
+    .redeem-board {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      align-items: start;
+      margin-top: 12px;
+    }
+
+    .redeem-groups {
+      display: grid;
+      gap: 12px;
+      max-height: calc(100vh - 220px);
+      overflow: auto;
+    }
+
+    .redeem-group {
+      display: grid;
+      gap: 8px;
+    }
+
+    .redeem-group-head {
+      width: 100%;
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 9px 10px;
+      background: rgba(255, 255, 255, 0.045);
+      color: rgba(238, 246, 255, 0.9);
+      font-size: 13px;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .redeem-group-head:hover {
+      border-color: rgba(111, 224, 240, 0.22);
+      background: rgba(111, 224, 240, 0.07);
+    }
+
+    .redeem-group-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .collapse-mark {
+      display: inline-grid;
+      place-items: center;
+      width: 22px;
+      height: 22px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 6px;
+      color: var(--accent);
+      background: rgba(0, 0, 0, 0.16);
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .redeem-code-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .redeem-code-card {
+      min-width: 0;
+      display: grid;
+      gap: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 10px 11px;
+      background: rgba(0, 0, 0, 0.12);
+    }
+
+    .redeem-code-card strong,
+    .redeem-code-card span {
+      display: block;
+      overflow-wrap: anywhere;
+    }
+
+    .redeem-code-card strong {
+      color: #d5fbff;
+      line-height: 1.35;
+    }
+
+    .redeem-code-card span {
+      color: var(--faint);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .redeem-code-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .route-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.45fr) minmax(320px, 0.75fr);
+      gap: 12px;
+      align-items: start;
+    }
+
+    .route-summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+
+    .route-stat {
+      min-width: 0;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 11px;
+      background: rgba(255, 255, 255, 0.045);
+    }
+
+    .route-stat span {
+      display: block;
+      color: var(--faint);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .route-stat strong {
+      display: block;
+      margin-top: 4px;
+      font-size: 20px;
+    }
+
+    .route-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .route-card {
+      display: grid;
+      gap: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 12px;
+      background: rgba(0, 0, 0, 0.12);
+    }
+
+    .route-card.disabled {
+      opacity: 0.68;
+    }
+
+    .route-card.readonly {
+      border-color: rgba(255, 211, 111, 0.22);
+      background: rgba(255, 211, 111, 0.06);
+    }
+
+    .route-card-head,
+    .route-actions,
+    .route-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .route-card-head {
+      justify-content: space-between;
+    }
+
+    .route-title {
+      min-width: 0;
+    }
+
+    .route-title strong,
+    .route-title span {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .route-title span {
+      margin-top: 2px;
+      color: var(--faint);
+      font-size: 12px;
+    }
+
+    .route-meta {
+      flex-wrap: wrap;
+      color: var(--faint);
+      font-size: 12px;
+    }
+
+    .route-actions {
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .route-test-result {
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 9px 10px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.045);
+      font-size: 12px;
+      line-height: 1.5;
+    }
+
+    .health-list,
+    .queue-list,
+    .audit-list {
+      display: grid;
+      gap: 9px;
+    }
+
+    .health-row,
+    .queue-row,
+    .audit-row {
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 10px 11px;
+      background: rgba(255, 255, 255, 0.045);
+    }
+
+    .health-row strong,
+    .queue-row strong,
+    .audit-row strong {
+      display: block;
+      color: rgba(241, 248, 255, 0.9);
+      font-size: 13px;
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+
+    .health-row span,
+    .queue-row span,
+    .audit-row span {
+      color: var(--faint);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .table-toolbar {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .toolbar-left,
+    .toolbar-right {
+      display: flex;
+      align-items: end;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .toolbar-left .field,
+    .toolbar-right .field {
+      min-width: 150px;
+    }
+
+    .table-wrap {
+      width: 100%;
+      overflow: auto;
+    }
+
+    .empty-state {
+      border: 1px dashed rgba(189, 216, 255, 0.18);
+      border-radius: 8px;
+      padding: 14px;
+      background: rgba(255, 255, 255, 0.035);
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    .empty-state strong {
+      display: block;
+      margin-bottom: 5px;
+      color: rgba(238, 246, 255, 0.88);
+      font-size: 13px;
+    }
+
+    .api-banner {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+      border: 1px solid rgba(111, 224, 240, 0.2);
+      border-radius: 8px;
+      padding: 12px 14px;
+      background:
+        linear-gradient(145deg, rgba(111, 224, 240, 0.1), rgba(255, 255, 255, 0.035)),
+        rgba(9, 16, 28, 0.72);
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .api-banner strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--text);
+    }
+
+    .api-banner.error {
+      border-color: rgba(255, 125, 142, 0.28);
+      background:
+        linear-gradient(145deg, rgba(255, 125, 142, 0.1), rgba(255, 255, 255, 0.035)),
+        rgba(9, 16, 28, 0.72);
+    }
+
+    .endpoint-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .endpoint-card {
+      display: grid;
+      gap: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 11px;
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .endpoint-card code {
+      color: #d5fbff;
+      overflow-wrap: anywhere;
+    }
+
+    table {
+      width: 100%;
+      min-width: 780px;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      text-align: left;
+      vertical-align: middle;
+      font-size: 13px;
+    }
+
+    th {
+      color: rgba(221, 233, 248, 0.56);
+      font-size: 11px;
+      font-weight: 850;
+      text-transform: uppercase;
+      background: rgba(0, 0, 0, 0.12);
+      white-space: nowrap;
+    }
+
+    td {
+      color: rgba(236, 245, 255, 0.84);
+    }
+
+    tbody tr {
+      transition: background 0.16s ease;
+    }
+
+    tbody tr:hover {
+      background: rgba(111, 224, 240, 0.055);
+    }
+
+    .mono {
+      font-family: "Cascadia Mono", "Consolas", monospace;
+      font-size: 12px;
+    }
+
+    .subtle {
+      color: var(--faint);
+    }
+
+    .link-btn {
+      border: 0;
+      padding: 0;
+      background: transparent;
+      color: var(--accent);
+      font-weight: 850;
+      cursor: pointer;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(300px, 390px);
+      gap: 12px;
+      align-items: start;
+    }
+
+    .detail-panel {
+      position: sticky;
+      top: 0;
+    }
+
+    .detail-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .detail-item {
+      display: grid;
+      gap: 5px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 10px;
+    }
+
+    .detail-item:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+    }
+
+    .detail-item span {
+      color: var(--faint);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .detail-item strong,
+    .detail-item p {
+      margin: 0;
+      color: rgba(238, 246, 255, 0.88);
+      font-size: 13px;
+      line-height: 1.55;
+      overflow-wrap: anywhere;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .form-grid .wide {
+      grid-column: span 2;
+    }
+
+    .form-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      padding-top: 2px;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+      background: rgba(1, 5, 11, 0.72);
+      backdrop-filter: blur(16px);
+    }
+
+    .modal-panel {
+      width: min(520px, 100%);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 8px;
+      background:
+        linear-gradient(180deg, rgba(18, 28, 44, 0.98), rgba(9, 15, 26, 0.98)),
+        var(--panel-strong);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .modal-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 18px 18px 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .modal-head h2 {
+      margin: 0;
+      font-size: 17px;
+      letter-spacing: 0;
+    }
+
+    .modal-head p,
+    .modal-body p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .modal-close {
+      width: 34px;
+      height: 34px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.055);
+      color: var(--muted);
+      cursor: pointer;
+    }
+
+    .modal-body {
+      display: grid;
+      gap: 14px;
+      padding: 16px 18px 18px;
+    }
+
+    .modal-field {
+      display: grid;
+      gap: 7px;
+      color: var(--faint);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      padding-top: 4px;
+    }
+
+    .operation-toast {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 30;
+      display: grid;
+      gap: 5px;
+      width: min(420px, calc(100vw - 36px));
+      border: 1px solid rgba(111, 224, 240, 0.22);
+      border-radius: 8px;
+      padding: 12px 14px;
+      background:
+        linear-gradient(145deg, rgba(111, 224, 240, 0.12), rgba(255, 255, 255, 0.04)),
+        rgba(9, 16, 28, 0.94);
+      color: var(--muted);
+      box-shadow: 0 18px 52px rgba(0, 0, 0, 0.32);
+      backdrop-filter: blur(16px);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .operation-toast strong {
+      color: var(--text);
+      font-size: 13px;
+    }
+
+    .operation-toast.error {
+      border-color: rgba(255, 125, 142, 0.32);
+      background:
+        linear-gradient(145deg, rgba(255, 125, 142, 0.13), rgba(255, 255, 255, 0.04)),
+        rgba(22, 11, 19, 0.94);
+    }
+
+    .toast-head {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .toast-head button {
+      border: 0;
+      padding: 0;
+      background: transparent;
+      color: var(--faint);
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    .generated-code {
+      display: grid;
+      gap: 8px;
+      max-height: 302px;
+      overflow: auto;
+    }
+
+    .code-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      padding: 10px 11px;
+      background: rgba(0, 0, 0, 0.12);
+    }
+
+    .code-row code {
+      color: #d5fbff;
+      overflow-wrap: anywhere;
+    }
+
+    .settings-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(300px, 0.72fr);
+      gap: 12px;
+      align-items: start;
+    }
+
+    .check-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .check-item {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 10px;
+      align-items: start;
+      color: rgba(235, 244, 255, 0.82);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .check-box {
+      width: 18px;
+      height: 18px;
+      display: inline-grid;
+      place-items: center;
+      border: 1px solid rgba(118, 231, 174, 0.42);
+      border-radius: 5px;
+      color: var(--ok);
+      background: rgba(118, 231, 174, 0.08);
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    @media (max-width: 1180px) {
+      .metric-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .overview-grid,
+      .redeem-board,
+      .two-col,
+      .settings-grid,
+      .route-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .detail-panel {
+        position: static;
+      }
+    }
+
+    @media (max-width: 1024px) {
+      .admin-app {
+        grid-template-columns: 220px minmax(0, 1fr);
+      }
+
+      .sidebar {
+        padding: 14px 10px;
+      }
+
+      .brand-title span,
+      .nav-count {
+        display: none;
+      }
+
+      .nav-button {
+        grid-template-columns: 30px minmax(0, 1fr);
+      }
+
+      .workspace {
+        padding: 18px;
+      }
+
+      .form-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .form-grid .wide {
+        grid-column: span 2;
+      }
+
+      table {
+        min-width: 720px;
+      }
+    }
+
+    @media (max-width: 860px) {
+      body {
+        overflow: auto;
+      }
+
+      .admin-app {
+        height: auto;
+        min-height: 100vh;
+        grid-template-columns: 1fr;
+      }
+
+      .admin-app.auth-app {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100vw;
+        min-height: 100vh;
+        min-height: 100dvh;
+        height: 100vh;
+        height: 100dvh;
+      }
+
+      .sidebar {
+        position: sticky;
+        top: 0;
+        z-index: 8;
+        padding: 12px;
+        border-right: 0;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .brand {
+        padding-bottom: 10px;
+      }
+
+      .nav {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+        overflow-x: auto;
+        padding-bottom: 2px;
+      }
+
+      .nav-button {
+        width: auto;
+        min-width: 138px;
+        grid-template-columns: 30px minmax(0, 1fr) auto;
+      }
+
+      .sidebar-footer {
+        display: none;
+      }
+
+      .workspace {
+        overflow: visible;
+        padding: 16px;
+      }
+
+      .topbar {
+        display: grid;
+        gap: 12px;
+      }
+
+      .admin-session {
+        justify-content: space-between;
+        width: 100%;
+      }
+
+      .top-actions {
+        justify-content: flex-start;
+      }
+
+      .search-control {
+        width: min(100%, 420px);
+      }
+
+      .form-grid,
+      .split-grid,
+      .route-summary {
+        grid-template-columns: 1fr;
+      }
+
+      .form-grid .wide {
+        grid-column: auto;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .admin-app.auth-app {
+        padding: 14px;
+      }
+
+      .admin-auth-screen {
+        padding: 14px;
+      }
+
+      .auth-card {
+        gap: 14px;
+        width: calc(100vw - 28px);
+        max-height: calc(100dvh - 28px);
+        overflow: auto;
+        padding: 16px;
+      }
+
+      .auth-brand img {
+        width: 38px;
+        height: 38px;
+      }
+
+      .auth-brand strong {
+        font-size: 16px;
+      }
+
+      .workspace {
+        padding: 12px;
+      }
+
+      .metric-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .panel-head,
+      .table-toolbar,
+      .health-row,
+      .queue-row,
+      .audit-row,
+      .code-row {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .chart {
+        height: 224px;
+      }
+
+      .admin-session,
+      .form-actions,
+      .modal-actions {
+        align-items: stretch;
+        flex-direction: column;
+      }
+
+      .admin-session .ghost-btn,
+      .form-actions button,
+      .modal-actions button {
+        width: 100%;
+      }
+
+      .modal-backdrop {
+        align-items: end;
+        padding: 10px;
+      }
+
+      .modal-panel {
+        width: 100%;
+        max-height: calc(100svh - 20px);
+        overflow: auto;
+      }
+
+      .operation-toast {
+        right: 10px;
+        bottom: 10px;
+        width: calc(100vw - 20px);
+      }
+
+      table {
+        min-width: 680px;
+      }
+
+      th,
+      td {
+        padding: 10px 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="adminApp" class="admin-app" :class="{ 'auth-app': !adminAuthenticated }">
+    <section v-if="!adminAuthenticated" class="admin-auth-screen">
+      <div class="auth-card">
+        <div class="auth-brand">
+          <img src="./assets/logo-mark.png" alt="">
+          <div>
+            <strong>LOAT Admin</strong>
+            <span>管理控制台</span>
+          </div>
+        </div>
+        <div class="auth-tabs">
+          <button type="button" :class="{ active: adminAuthMode === 'login' }" @click="setAdminAuthMode('login')">登录</button>
+          <button type="button" :class="{ active: adminAuthMode === 'register' }" @click="setAdminAuthMode('register')">注册</button>
+        </div>
+        <form class="auth-form" @submit.prevent="submitAdminAuth">
+          <label class="field">
+            <span>管理员账号</span>
+            <input v-model.trim="adminAuthForm.username" type="text" autocomplete="username" placeholder="admin">
+          </label>
+          <label class="field">
+            <span>密码</span>
+            <input v-model="adminAuthForm.password" type="password" autocomplete="current-password" placeholder="至少 8 位">
+          </label>
+          <label v-if="adminAuthMode === 'register'" class="field">
+            <span>确认密码</span>
+            <input v-model="adminAuthForm.confirmPassword" type="password" autocomplete="new-password">
+          </label>
+          <label v-if="adminAuthMode === 'register'" class="field">
+            <span>ADMIN_SECRET</span>
+            <input v-model.trim="adminAuthForm.adminSecret" type="password" autocomplete="off" placeholder="仅注册时校验，不保存">
+          </label>
+          <button class="primary-btn" type="submit" :disabled="adminAuthBusy">
+            {{ adminAuthBusy ? "处理中..." : (adminAuthMode === 'login' ? "进入控制台" : "注册并进入") }}
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <aside v-if="adminAuthenticated" class="sidebar" aria-label="管理员导航">
+      <div class="brand">
+        <img src="./assets/logo-mark.png" alt="">
+        <div class="brand-title">
+          <strong>LOAT Admin</strong>
+          <span>管理控制台</span>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <button
+          v-for="item in navItems"
+          :key="item.id"
+          class="nav-button"
+          :class="{ active: activeSection === item.id }"
+          type="button"
+          @click="setActiveSection(item.id)"
+        >
+          <span class="nav-mark">{{ item.mark }}</span>
+          <span class="nav-text">{{ item.label }}</span>
+          <span class="nav-count">{{ item.count }}</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <span>当前环境</span>
+        <strong>{{ environmentLabel }}</strong>
+      </div>
+    </aside>
+
+    <main v-if="adminAuthenticated" class="workspace">
+      <header class="topbar">
+        <div>
+          <p class="kicker">Admin Console</p>
+          <h1>{{ currentSection.title }}</h1>
+          <p class="page-desc">{{ currentSection.desc }}</p>
+        </div>
+        <div class="admin-session">
+          <span>{{ adminAuthUser?.displayName || adminAuthUser?.username }}</span>
+          <button class="ghost-btn" type="button" @click="logoutAdmin">退出</button>
+        </div>
+      </header>
+
+      <section v-if="activeSection === 'overview'" class="page-section">
+        <div class="metric-grid">
+          <article v-for="metric in metrics" :key="metric.label" class="metric" :class="metric.tone">
+            <span>{{ metric.label }}</span>
+            <strong>{{ metric.value }}</strong>
+            <small>{{ metric.note }}</small>
+          </article>
+        </div>
+
+        <div class="content-grid overview-grid">
+          <section class="panel">
+            <header class="panel-head">
+              <div>
+                <h2>生成请求趋势</h2>
+                <p>来自真实 `GET /admin/ai-requests/summary?hours=12`。</p>
+              </div>
+              <span class="tag">近 12 小时</span>
+            </header>
+            <div class="panel-body">
+              <div v-if="trendPoints.length" class="chart" aria-label="生成请求趋势">
+                <svg class="line-chart" viewBox="0 0 720 240" role="img" aria-labelledby="trendTitle">
+                  <title id="trendTitle">近 12 小时生成请求趋势</title>
+                  <defs>
+                    <linearGradient id="trendAreaGradient" x1="0" x2="0" y1="0" y2="1">
+                      <stop offset="0%" stop-color="#6fe0f0" stop-opacity="0.28"></stop>
+                      <stop offset="100%" stop-color="#6fe0f0" stop-opacity="0"></stop>
+                    </linearGradient>
+                  </defs>
+                  <line
+                    v-for="grid in trendGridLines"
+                    :key="grid.y"
+                    class="chart-grid-line"
+                    x1="34"
+                    :y1="grid.y"
+                    x2="686"
+                    :y2="grid.y"
+                  ></line>
+                  <path v-if="trendAreaPath" class="chart-area" :d="trendAreaPath"></path>
+                  <path v-if="trendLinePath" class="chart-line" :d="trendLinePath"></path>
+                  <g v-for="point in trendPoints" :key="point.label">
+                    <title>{{ point.label }}：{{ point.total }} 次</title>
+                    <circle class="chart-point" :cx="point.x" :cy="point.y" r="4"></circle>
+                    <text class="chart-value" :x="point.x" :y="point.valueY" text-anchor="middle">{{ point.total }}</text>
+                    <text class="chart-label" :x="point.x" y="228" text-anchor="middle">{{ point.label }}</text>
+                  </g>
+                </svg>
+              </div>
+              <div v-else class="empty-state">
+                <strong>{{ requestsLoaded ? "近 12 小时暂无请求" : "尚未加载真实趋势" }}</strong>
+                登录管理员账户后会自动加载趋势，也可以进入 AI 请求页手动刷新。
+              </div>
+            </div>
+          </section>
+
+          <div class="content-grid">
+            <section class="panel">
+              <header class="panel-head">
+                <div>
+                  <h2>系统健康</h2>
+                  <p>D1、R2、KV 与 AI 路由的管理视图。</p>
+                </div>
+              </header>
+              <div class="panel-body health-list">
+                <div v-for="item in healthItems" :key="item.name" class="health-row">
+                  <div>
+                    <strong>{{ item.name }}</strong>
+                    <span>{{ item.desc }}</span>
+                  </div>
+                  <span class="status-chip" :class="item.tone">{{ item.status }}</span>
+                </div>
+              </div>
+            </section>
+
+          </div>
+        </div>
+
+        <section class="panel" style="margin-top: 12px;">
+          <header class="panel-head">
+            <div>
+              <h2>最近 AI 请求</h2>
+              <p>来自真实 `GET /admin/ai-requests?limit=50`。</p>
+            </div>
+            <button class="ghost-btn" type="button" @click="setActiveSection('requests')">查看全部</button>
+          </header>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>请求 ID</th>
+                  <th>用户</th>
+                  <th>模式</th>
+                  <th>积分</th>
+                  <th>状态</th>
+                  <th>路由</th>
+                  <th>时间</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="row in requestRows.slice(0, 5)" :key="row.id">
+                  <td class="mono">{{ row.id }}</td>
+                  <td>{{ row.user }}</td>
+                  <td>{{ row.mode }}</td>
+                  <td>{{ row.cost }}</td>
+                  <td><span class="status-chip" :class="statusClass(row.status)">{{ row.status }}</span></td>
+                  <td>{{ row.route }}</td>
+                  <td class="subtle">{{ row.time }}</td>
+                </tr>
+              </tbody>
+            </table>
+            <div v-if="requestRows.length === 0" class="empty-state">
+              <strong>{{ requestsLoaded ? "暂无真实 AI 请求" : "尚未加载真实请求列表" }}</strong>
+              登录管理员账户后会自动加载最近请求，也可以进入 AI 请求页手动刷新。
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <section v-else-if="activeSection === 'users'" class="two-col">
+        <section class="panel">
+          <div class="table-toolbar">
+            <div class="toolbar-left">
+              <label class="field">
+                <span>用户状态</span>
+                <select v-model="userStatusFilter">
+                  <option value="all">全部</option>
+                  <option value="active">正常</option>
+                  <option value="disabled">已禁用</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>排序</span>
+                <select v-model="userSort">
+                  <option value="lastLogin">最近登录</option>
+                  <option value="balance">积分余额</option>
+                  <option value="creditValue">折合金额</option>
+                  <option value="created">注册时间</option>
+                </select>
+              </label>
+            </div>
+            <button class="ghost-btn" type="button" @click="loadUsers">{{ usersBusy ? "加载中..." : "刷新真实用户" }}</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>用户</th>
+                  <th>状态</th>
+                  <th>积分余额</th>
+                  <th>折合金额</th>
+                  <th>累计消耗</th>
+                  <th>最近登录</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="user in filteredUsers" :key="user.id">
+                  <td>
+                    <strong>{{ user.displayName }}</strong><br>
+                    <span class="subtle mono">{{ user.username }}</span>
+                  </td>
+                  <td><span class="status-chip" :class="user.status === 'active' ? 'status-ok' : 'status-bad'">{{ user.statusLabel }}</span></td>
+                  <td>{{ user.balance }}</td>
+                  <td class="mono">{{ formatCreditValue(user.balance) }}</td>
+                  <td>{{ user.spent }}</td>
+                  <td class="subtle">{{ user.lastLogin }}</td>
+                  <td><button class="link-btn" type="button" @click="selectUser(user.id)">详情</button></td>
+                </tr>
+              </tbody>
+            </table>
+            <div v-if="filteredUsers.length === 0" class="empty-state">
+              <strong>{{ usersLoaded ? "没有匹配的真实用户" : "尚未加载真实用户列表" }}</strong>
+              已接入 `GET /admin/users?limit=100&status=&q=`。登录管理员账户后点击“刷新真实用户”。折合金额按 1 积分 = ¥0.10 估算。
+            </div>
+          </div>
+        </section>
+
+        <aside class="panel detail-panel">
+          <header class="panel-head">
+            <div>
+              <h2>用户详情</h2>
+              <p>后续接入积分调整、封禁和账本 API。</p>
+            </div>
+          </header>
+          <div v-if="selectedUser" class="panel-body detail-list">
+            <div class="detail-item">
+              <span>账号</span>
+              <strong>{{ selectedUser.displayName }} / {{ selectedUser.username }}</strong>
+            </div>
+            <div class="detail-item">
+              <span>积分</span>
+              <strong>{{ selectedUser.balance }} 可用，累计消耗 {{ selectedUser.spent }}</strong>
+            </div>
+            <div class="detail-item">
+              <span>折合金额</span>
+              <strong>{{ formatCreditValue(selectedUser.balance) }} 可用估算，按 1 积分 = ¥0.10</strong>
+            </div>
+            <div class="detail-item">
+              <span>最近行为</span>
+              <p>{{ selectedUser.note }}</p>
+            </div>
+            <div class="detail-item">
+              <span>积分流水</span>
+              <p v-if="selectedCreditLedger.length">{{ selectedCreditLedger[0].type }} {{ selectedCreditLedger[0].deltaText }}，余额 {{ selectedCreditLedger[0].balanceAfter }} · {{ selectedCreditLedger[0].time }}</p>
+              <p v-else>该用户暂无积分流水，或尚未打开用户详情。</p>
+            </div>
+            <div class="detail-item">
+              <span>充值流水</span>
+              <p>{{ selectedCashLedgerStatus }}</p>
+            </div>
+            <div class="form-actions">
+              <button class="ghost-btn" type="button" :disabled="adminActionBusy" @click="openCreditAdjustDialog">调整积分</button>
+              <button class="danger-btn" type="button" :disabled="adminActionBusy" @click="openUserStatusDialog">{{ selectedUser.status === 'active' ? '禁用用户' : '启用用户' }}</button>
+            </div>
+          </div>
+          <div v-else class="panel-body">
+            <div class="empty-state">
+              <strong>未加载真实用户</strong>
+              选择用户后会调用 `GET /admin/users/:id`、积分流水和充值流水接口。
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      <section v-else-if="activeSection === 'redeem'" class="page-section">
+        <section class="panel">
+          <header class="panel-head">
+            <div>
+              <h2>生成兑换码</h2>
+              <p>生成后只在本次结果中显示明文兑换码，请及时保存到你的发放渠道。</p>
+            </div>
+          </header>
+          <div class="panel-body">
+            <div class="form-grid">
+              <label class="field">
+                <span>积分面额</span>
+                <input v-model.number="redeemForm.credits" type="number" min="1" step="1">
+              </label>
+              <label class="field">
+                <span>生成数量</span>
+                <input v-model.number="redeemForm.count" type="number" min="1" max="100" step="1">
+              </label>
+              <label class="field">
+                <span>最大使用次数</span>
+                <input v-model.number="redeemForm.maxUses" type="number" min="1" step="1">
+              </label>
+              <label class="field">
+                <span>前缀</span>
+                <input v-model.trim="redeemForm.prefix" type="text" maxlength="10">
+              </label>
+              <label class="field wide">
+                <span>过期时间</span>
+                <input v-model="redeemForm.expiresAt" type="datetime-local">
+              </label>
+              <label class="field wide">
+                <span>备注</span>
+                <input v-model.trim="redeemForm.note" type="text" maxlength="120" placeholder="例如：活动批次 / 面额说明">
+              </label>
+            </div>
+            <div class="form-actions" style="margin-top: 12px;">
+              <button class="ghost-btn" type="button" @click="resetRedeemForm">重置</button>
+              <button class="primary-btn" type="button" :disabled="redeemBusy" @click="createRedeemCodes">{{ redeemBusy ? "生成中..." : "生成兑换码" }}</button>
+            </div>
+            <div v-if="generatedCodes.length" class="generated-code" style="margin-top: 14px;">
+              <div v-for="item in generatedCodes" :key="item.code" class="code-row">
+                <code>{{ item.code }}</code>
+                <span class="tag">{{ item.credits }} 积分</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <div class="redeem-board">
+          <section v-for="column in redeemStatusColumns" :key="column.id" class="panel redeem-column">
+            <header class="panel-head">
+              <div>
+                <h2>{{ column.title }}</h2>
+                <p>{{ column.desc }}</p>
+              </div>
+              <span class="tag">{{ column.count }} 个</span>
+            </header>
+            <div class="panel-body redeem-groups">
+              <div v-for="group in column.groups" :key="column.id + '-' + group.credits" class="redeem-group">
+                <button
+                  class="redeem-group-head"
+                  type="button"
+                  :aria-expanded="isRedeemGroupExpanded(column.id, group.credits)"
+                  @click="toggleRedeemGroup(column.id, group.credits)"
+                >
+                  <span class="redeem-group-title">
+                    <span class="collapse-mark">{{ isRedeemGroupExpanded(column.id, group.credits) ? "-" : "+" }}</span>
+                    <strong>{{ group.label }}</strong>
+                  </span>
+                  <span class="tag">{{ group.items.length }} 个</span>
+                </button>
+                <div v-if="isRedeemGroupExpanded(column.id, group.credits)" class="redeem-code-list">
+                  <div v-for="code in group.items" :key="code.key" class="redeem-code-card">
+                    <div>
+                      <strong class="mono">{{ code.label }}</strong>
+                      <span>{{ code.note }}</span>
+                    </div>
+                    <div class="redeem-code-meta">
+                      <span>{{ code.used }}/{{ code.total }}</span>
+                      <span>{{ code.createdAt }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div v-if="column.groups.length === 0" class="empty-state">
+                <strong>暂无{{ column.title }}</strong>
+                登录管理员账户后会自动加载兑换码列表，也可以稍后手动刷新。
+              </div>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section v-else-if="activeSection === 'routes'" class="page-section">
+        <div class="route-summary">
+          <div class="route-stat">
+            <span>路由总数</span>
+            <strong>{{ routePoolSummary.count }}</strong>
+          </div>
+          <div class="route-stat">
+            <span>启用路由</span>
+            <strong>{{ routePoolSummary.enabled }}</strong>
+          </div>
+          <div class="route-stat">
+            <span>环境回退</span>
+            <strong>{{ routePoolSummary.fallbackCount }}</strong>
+          </div>
+          <div class="route-stat">
+            <span>密钥加密</span>
+            <strong>{{ routePoolSummary.keyEncryptionConfigured ? "可用" : "未配" }}</strong>
+          </div>
+        </div>
+
+        <div class="route-layout">
+          <section class="panel">
+            <header class="panel-head">
+              <div>
+                <h2>路由池</h2>
+                <p>D1 路由优先，未配置时回退 AI_ROUTES_JSON / legacy 环境变量。</p>
+              </div>
+              <button class="ghost-btn" type="button" @click="loadAiRoutes">{{ routePoolBusy ? "加载中..." : "刷新路由" }}</button>
+            </header>
+            <div class="panel-body route-list">
+              <article
+                v-for="route in routeRows"
+                :key="route.source + '-' + route.id"
+                class="route-card"
+                :class="{ disabled: !route.enabled, readonly: route.readOnly }"
+              >
+                <div class="route-card-head">
+                  <div class="route-title">
+                    <strong>{{ route.provider }} / {{ route.id }}</strong>
+                    <span>{{ route.baseHost || route.baseUrl }}</span>
+                  </div>
+                  <span class="status-chip" :class="route.enabled ? 'status-ok' : 'status-warn'">{{ route.enabled ? "启用" : "停用" }}</span>
+                </div>
+                <div class="route-meta">
+                  <span class="tag">优先级 {{ route.priority }}</span>
+                  <span class="tag">{{ route.model || "默认模型" }}</span>
+                  <span class="tag">{{ route.apiKeyHint || (route.apiKeyConfigured ? "密钥已配置" : "无密钥") }}</span>
+                  <span v-if="route.readOnly" class="tag">{{ route.source }}</span>
+                  <span v-if="route.stats?.total" class="tag">24h {{ route.stats.total }} 次 · 成功率 {{ formatPercent(route.stats.successRate) }}</span>
+                </div>
+                <div class="route-meta">
+                  <span>生成：{{ route.imageGeneratePath || "/v1/images/generations" }}</span>
+                  <span>编辑：{{ route.imageEditPath || "自动推断" }}</span>
+                  <span>Multipart：{{ route.imageMultipartMode || "默认" }}</span>
+                </div>
+                <div v-if="route.stats?.lastError" class="route-test-result">
+                  最近错误：{{ route.stats.lastError }}
+                </div>
+                <div v-if="routeTestResults[route.id]" class="route-test-result">
+                  测试结果：{{ routeTestResults[route.id].ok ? "通过" : "失败" }} ·
+                  {{ routeTestResults[route.id].status || "无状态码" }} ·
+                  {{ formatLatency(routeTestResults[route.id].durationMs) }} ·
+                  {{ routeTestResults[route.id].message }}
+                </div>
+                <div class="route-actions">
+                  <button v-if="!route.readOnly" class="ghost-btn" type="button" @click="editAiRoute(route)">编辑</button>
+                  <button v-if="!route.readOnly" class="ghost-btn" type="button" :disabled="routePoolBusy" @click="moveAiRoute(route, -1)">上移</button>
+                  <button v-if="!route.readOnly" class="ghost-btn" type="button" :disabled="routePoolBusy" @click="moveAiRoute(route, 1)">下移</button>
+                  <button v-if="!route.readOnly" class="ghost-btn" type="button" :disabled="routeTestBusy === route.id" @click="testAiRoute(route)">
+                    {{ routeTestBusy === route.id ? "测试中..." : "测试" }}
+                  </button>
+                  <button v-if="!route.readOnly" class="ghost-btn" type="button" :disabled="routePoolBusy" @click="toggleAiRouteEnabled(route)">
+                    {{ route.enabled ? "停用" : "启用" }}
+                  </button>
+                  <button v-if="!route.readOnly" class="danger-btn" type="button" :disabled="routePoolBusy" @click="deleteAiRoute(route)">删除</button>
+                </div>
+              </article>
+              <div v-if="routeRows.length === 0" class="empty-state">
+                <strong>{{ routePoolLoaded ? "暂无路由配置" : "尚未加载路由池" }}</strong>
+                添加第一条路由前，请确认 Worker 已配置 ROUTE_KEY_ENCRYPTION_SECRET 或可回退 ADMIN_SECRET。
+              </div>
+              <div v-if="routePoolFallbackError" class="empty-state">
+                <strong>环境变量路由解析异常</strong>
+                {{ routePoolFallbackError }}
+              </div>
+            </div>
+          </section>
+
+          <aside class="panel detail-panel">
+            <header class="panel-head">
+              <div>
+                <h2>{{ routeFormMode === "edit" ? "编辑路由" : "添加路由" }}</h2>
+                <p>API Key 只写入加密值，保存后不会回显明文。</p>
+              </div>
+            </header>
+            <form class="panel-body auth-form" @submit.prevent="saveAiRoute">
+              <label class="field">
+                <span>路由 ID</span>
+                <input v-model.trim="routeForm.id" type="text" :disabled="routeFormMode === 'edit'" placeholder="primary-de5">
+              </label>
+              <label class="field">
+                <span>Provider</span>
+                <input v-model.trim="routeForm.provider" type="text" placeholder="de5">
+              </label>
+              <label class="field">
+                <span>Base URL</span>
+                <input v-model.trim="routeForm.baseUrl" type="url" placeholder="https://api.example.com">
+              </label>
+              <label class="field">
+                <span>API Key</span>
+                <input v-model.trim="routeForm.apiKey" type="password" autocomplete="off" :placeholder="routeFormMode === 'edit' ? '留空则保留原密钥' : 'sk-...'">
+              </label>
+              <label class="field">
+                <span>默认模型</span>
+                <select v-model="routeForm.model">
+                  <option value="">跟随前台请求</option>
+                  <option value="gpt-image-1.5">gpt-image-1.5</option>
+                  <option value="gpt-image-2">gpt-image-2</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>生成路径</span>
+                <input v-model.trim="routeForm.imageGeneratePath" type="text" placeholder="/v1/images/generations">
+              </label>
+              <label class="field">
+                <span>编辑路径</span>
+                <input v-model.trim="routeForm.imageEditPath" type="text" placeholder="留空自动推断">
+              </label>
+              <label class="field">
+                <span>Multipart 模式</span>
+                <select v-model="routeForm.imageMultipartMode">
+                  <option value="">默认</option>
+                  <option value="repeated-image">repeated-image</option>
+                  <option value="image-array">image-array</option>
+                  <option value="source-target-array">source-target-array</option>
+                  <option value="target-reference-fields">target-reference-fields</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>优先级</span>
+                <input v-model.number="routeForm.priority" type="number" min="1" step="1">
+              </label>
+              <label class="field">
+                <span>备注</span>
+                <input v-model.trim="routeForm.note" type="text" maxlength="300" placeholder="用途 / 额度 / 代理说明">
+              </label>
+              <label class="check-row">
+                <input v-model="routeForm.enabled" type="checkbox">
+                <span>保存后启用该路由</span>
+              </label>
+              <div class="form-actions">
+                <button class="ghost-btn" type="button" @click="resetRouteForm">新建</button>
+                <button class="primary-btn" type="submit" :disabled="routeSaveBusy">{{ routeSaveBusy ? "保存中..." : (routeFormMode === "edit" ? "保存修改" : "添加路由") }}</button>
+              </div>
+            </form>
+          </aside>
+        </div>
+      </section>
+
+      <section v-else-if="activeSection === 'requests'" class="two-col">
+        <section class="panel">
+          <div class="table-toolbar">
+            <div class="toolbar-left">
+              <label class="field">
+                <span>请求状态</span>
+                <select v-model="requestStatusFilter">
+                  <option value="all">全部</option>
+                  <option value="success">成功</option>
+                  <option value="failed">失败</option>
+                  <option value="refunded">已退款</option>
+                </select>
+              </label>
+              <label class="field">
+                <span>路由</span>
+                <select v-model="routeFilter">
+                  <option value="all">全部路由</option>
+                  <option value="primary-de5">primary-de5</option>
+                  <option value="legacy">legacy</option>
+                </select>
+              </label>
+            </div>
+            <button class="ghost-btn" type="button" @click="loadAiRequests">{{ requestsBusy ? "加载中..." : "刷新真实请求" }}</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>请求 ID</th>
+                  <th>用户</th>
+                  <th>模式</th>
+                  <th>状态</th>
+                  <th>积分</th>
+                  <th>路由</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="row in filteredRequests" :key="row.id">
+                  <td class="mono">{{ row.id }}</td>
+                  <td>{{ row.user }}</td>
+                  <td>{{ row.mode }}</td>
+                  <td><span class="status-chip" :class="statusClass(row.status)">{{ row.status }}</span></td>
+                  <td>{{ row.cost }}</td>
+                  <td>{{ row.route }}</td>
+                  <td><button class="link-btn" type="button" @click="selectedRequestId = row.id">查看</button></td>
+                </tr>
+              </tbody>
+            </table>
+            <div v-if="filteredRequests.length === 0" class="empty-state">
+              <strong>{{ requestsLoaded ? "没有匹配的真实请求" : "尚未加载真实请求列表" }}</strong>
+              已接入 `GET /admin/ai-requests?limit=50&status=&q=`。登录管理员账户后点击“刷新真实请求”。
+            </div>
+          </div>
+        </section>
+
+        <aside class="panel detail-panel">
+          <header class="panel-head">
+            <div>
+              <h2>请求详情</h2>
+              <p>对应 GET /admin/ai-request?id=...</p>
+            </div>
+          </header>
+          <div class="panel-body detail-list">
+            <label class="field">
+              <span>已知请求 ID</span>
+              <input v-model.trim="requestLookupId" type="text" placeholder="例如 ai_request_logs.id">
+            </label>
+            <div class="form-actions">
+              <button class="primary-btn" type="button" @click="loadAiRequest">{{ requestBusy ? "查询中..." : "查询真实请求" }}</button>
+            </div>
+            <template v-if="selectedRequest">
+              <div class="detail-item">
+                <span>请求 ID</span>
+                <strong class="mono">{{ selectedRequest.id }}</strong>
+              </div>
+              <div class="detail-item">
+                <span>提示词摘要</span>
+                <p>{{ selectedRequest.prompt }}</p>
+              </div>
+              <div class="detail-item">
+                <span>上游状态</span>
+                <strong>{{ selectedRequest.upstream_status || selectedRequest.upstreamStatus || "--" }} · {{ selectedRequest.metadata?.route?.id || selectedRequest.route || "--" }}</strong>
+              </div>
+              <div class="detail-item">
+                <span>错误信息</span>
+                <p>{{ selectedRequest.error || '无错误' }}</p>
+              </div>
+            </template>
+            <div v-else class="empty-state">
+              <strong>请输入真实请求 ID</strong>
+              因为缺少请求列表接口，当前只能查询你已经知道的 `ai_request_logs.id`。
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      <section v-else class="page-section">
+        <div class="empty-state">
+          <strong>该页面已隐藏</strong>
+          设置与审计不再出现在管理员主导航中。
+        </div>
+      </section>
+    </main>
+
+    <div v-if="adminDialog && adminDialogUser" class="modal-backdrop" @click.self="closeAdminDialog">
+      <section class="modal-panel" role="dialog" aria-modal="true">
+        <header class="modal-head">
+          <div>
+            <h2>{{ adminDialog.title }}</h2>
+            <p>{{ adminDialog.desc }}</p>
+          </div>
+          <button class="modal-close" type="button" :disabled="adminActionBusy" @click="closeAdminDialog">×</button>
+        </header>
+        <div class="modal-body">
+          <div class="detail-item">
+            <span>目标用户</span>
+            <strong>{{ adminDialogUser.displayName }} / {{ adminDialogUser.username }}</strong>
+          </div>
+
+          <template v-if="adminDialog.type === 'credit'">
+            <label class="modal-field">
+              调整积分
+              <input v-model.trim="creditAdjustForm.delta" type="number" step="1" placeholder="正数增加，负数扣减">
+            </label>
+            <p>当前余额 {{ adminDialogUser.balance }}，保存后会写入 admin_adjust 积分流水。</p>
+          </template>
+
+          <template v-if="adminDialog.type === 'status'">
+            <div class="detail-item">
+              <span>状态变更</span>
+              <strong>{{ adminDialogUser.statusLabel }} → {{ statusActionLabel }}</strong>
+            </div>
+            <p>禁用用户会撤销该用户当前登录会话；启用不会恢复已经撤销的旧会话。</p>
+          </template>
+
+          <label class="modal-field">
+            操作原因
+            <textarea v-model.trim="adminActionReason" placeholder="例如：异常注册用户；人工补偿积分；测试账号清理"></textarea>
+          </label>
+
+          <div class="modal-actions">
+            <button class="ghost-btn" type="button" :disabled="adminActionBusy" @click="closeAdminDialog">取消</button>
+            <button :class="adminDialog.tone === 'danger' ? 'danger-btn' : 'primary-btn'" type="button" :disabled="adminActionBusy" @click="submitAdminDialog">
+              {{ adminActionBusy ? "执行中..." : adminDialog.primary }}
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div v-if="connectionMessage" class="operation-toast" :class="{ error: connectionTone === 'error' }">
+      <div class="toast-head">
+        <strong>{{ connectionTitle }}</strong>
+        <button type="button" @click="dismissConnection">×</button>
+      </div>
+      <span>{{ connectionMessage }}</span>
+    </div>
+  </div>
+
+  <script>
+    const { createApp, computed, onMounted, ref } = Vue;
+
+    createApp({
+      setup() {
+        const activeSection = ref("overview");
+        const globalSearch = ref("");
+        const userStatusFilter = ref("all");
+        const userSort = ref("lastLogin");
+        const requestStatusFilter = ref("all");
+        const routeFilter = ref("all");
+        const selectedUserId = ref("");
+        const selectedRequestId = ref("");
+        const requestLookupId = ref("");
+        const environmentLabel = ref("管理员账户模式");
+        const workerUrl = ref("https://photo-react-upload-proxy.lalakunaozi233.workers.dev");
+        const adminAuthMode = ref("login");
+        const adminAuthBusy = ref(false);
+        const adminAuthToken = ref("");
+        const adminAuthUser = ref(null);
+        const adminAuthForm = ref({
+          username: "",
+          password: "",
+          confirmPassword: "",
+          adminSecret: ""
+        });
+        const loading = ref(false);
+        const usersBusy = ref(false);
+        const usersLoaded = ref(false);
+        const userPagination = ref(null);
+        const requestsBusy = ref(false);
+        const requestsLoaded = ref(false);
+        const requestPagination = ref(null);
+        const requestSummary = ref(null);
+        const requestBusy = ref(false);
+        const connectionTitle = ref("等待连接真实后端");
+        const connectionMessage = ref("");
+        const connectionTone = ref("");
+        const connectionTag = ref("未连接");
+        const adminStats = ref(null);
+        const healthState = ref(null);
+        const sectionCopy = {
+          overview: {
+            title: "运营总览",
+            desc: "用一个屏幕看清用户、积分、生成请求和后端健康状态。"
+          },
+          users: {
+            title: "用户与积分",
+            desc: "查询用户、查看积分余额、折合金额和账本，后续承接封禁与人工调账。"
+          },
+          redeem: {
+            title: "兑换码管理",
+            desc: "按状态和积分类别查看所有兑换码。"
+          },
+          routes: {
+            title: "路由池",
+            desc: "管理 AI 上游路由、优先级、启停状态和连通性测试。"
+          },
+          requests: {
+            title: "AI 请求日志",
+            desc: "追踪请求状态、上游路由、失败原因和退款链路。"
+          },
+          settings: {
+            title: "设置与审计",
+            desc: "本地连接信息、安全清单和管理员操作记录。"
+          }
+        };
+
+        const CREDIT_VALUE_CNY = 0.1;
+        const ADMIN_AUTH_STORAGE_KEY = "photo_react_admin_auth_v1";
+        const activityBars = ref([]);
+        const users = ref([]);
+        const requestRows = ref([]);
+        const redeemBatches = ref([]);
+        const redeemBusy = ref(false);
+        const redeemExpandedGroups = ref({});
+        const routePoolBusy = ref(false);
+        const routePoolLoaded = ref(false);
+        const routeSaveBusy = ref(false);
+        const routeTestBusy = ref("");
+        const aiRoutes = ref([]);
+        const fallbackAiRoutes = ref([]);
+        const routePoolSummaryRaw = ref(null);
+        const routePoolFallbackError = ref("");
+        const routeTestResults = ref({});
+        const routeFormMode = ref("create");
+        const routeForm = ref({
+          id: "",
+          provider: "",
+          baseUrl: "",
+          apiKey: "",
+          model: "",
+          imageGeneratePath: "/v1/images/generations",
+          imageEditPath: "",
+          imageMultipartMode: "",
+          priority: 1,
+          enabled: true,
+          note: ""
+        });
+        const redeemForm = ref({
+          credits: 99,
+          count: 1,
+          maxUses: 1,
+          prefix: "PR",
+          expiresAt: "",
+          note: ""
+        });
+        const generatedCodes = ref([]);
+        const auditLogs = ref([]);
+        const fetchedRequest = ref(null);
+        const selectedUserDetail = ref(null);
+        const selectedCreditLedger = ref([]);
+        const selectedCashLedger = ref(null);
+        const adminDialog = ref(null);
+        const adminDialogUser = ref(null);
+        const adminActionBusy = ref(false);
+        const adminActionReason = ref("");
+        const creditAdjustForm = ref({ delta: "" });
+
+        const requiredEndpoints = [
+          { method: "GET", path: "/admin/stats", desc: "已存在。返回用户总数、积分总余额、兑换码总数/使用数、AI 请求状态汇总。" },
+          { method: "GET", path: "/admin/users?limit=100&status=&q=", desc: "已新增。用户列表：ID、用户名、显示名、状态、积分余额、累计赚取/消耗、最近登录、创建时间。" },
+          { method: "GET", path: "/admin/users/:id", desc: "已新增。用户详情：基础资料、积分流水、最近请求、最近兑换记录和充值账务状态。" },
+          { method: "GET", path: "/admin/users/:id/credit-ledger", desc: "已新增。积分流水：register_bonus、redeem、generation_charge、generation_refund、admin_adjust。" },
+          { method: "GET", path: "/admin/users/:id/cash-ledger", desc: "已新增。远端 D1 当前没有 cash/payment 表，因此返回 schemaMissing，不生成假充值数据。" },
+          { method: "PATCH", path: "/admin/users/:id/status", desc: "已新增。启用/禁用用户，要求原因，禁用时撤销当前会话并写入审计日志。" },
+          { method: "POST", path: "/admin/users/:id/credit-adjustments", desc: "已新增。管理员人工调账，写入 admin_adjust 积分流水和审计日志。" },
+          { method: "POST", path: "/admin/redeem-codes", desc: "已恢复。管理员登录后生成兑换码，并写入审计日志。" },
+          { method: "GET", path: "/admin/redeem-codes?limit=50&status=", desc: "已新增。兑换码列表：hint、面额、最大使用次数、已用次数、过期时间、禁用状态和备注。" },
+          { method: "GET", path: "/admin/redeem-codes/:hash/redemptions", desc: "已新增。单个兑换码的真实兑换记录和兑换用户。" },
+          { method: "GET", path: "/admin/ai-routes", desc: "已新增。路由池列表：D1 路由、环境变量回退路由、24 小时调用统计。" },
+          { method: "POST", path: "/admin/ai-routes", desc: "已新增。添加 AI 路由，API Key 加密存储，写入审计日志。" },
+          { method: "PATCH", path: "/admin/ai-routes/:id", desc: "已新增。编辑路由、启停、替换密钥、调整优先级。" },
+          { method: "POST", path: "/admin/ai-routes/:id/test", desc: "已新增。测试路由连通性，不回显密钥。" },
+          { method: "GET", path: "/admin/ai-requests?limit=50&status=&userId=", desc: "已新增。AI 请求列表：请求 ID、用户、模型、模式、积分、状态、上游状态、创建/完成时间。" },
+          { method: "GET", path: "/admin/ai-requests/summary?hours=12", desc: "已新增。按小时汇总 AI 请求数、成功数、失败数、退款数、排队数和积分消耗。" },
+          { method: "GET", path: "/admin/ai-request?id=", desc: "已存在。但只能按已知 ID 查单条请求。" },
+          { method: "GET", path: "/admin/audit-logs?limit=50", desc: "已新增。管理员操作审计日志。" }
+        ];
+
+        const securityChecks = [
+          "管理后台使用 Cloudflare Access 或独立 admin session，不在浏览器长期保存 ADMIN_SECRET。",
+          "所有写操作落入 admin_audit_logs，记录操作者、目标、参数摘要和时间。",
+          "用户调账、禁用兑换码、退款类操作需要二次确认。",
+          "请求日志隐藏上游密钥、代理地址和完整内部错误细节。"
+        ];
+
+        const currentSection = computed(() => sectionCopy[activeSection.value] || sectionCopy.overview);
+        const adminAuthenticated = computed(() => Boolean(adminAuthToken.value && adminAuthUser.value?.id));
+
+        const aiRequestTotal = computed(() => (
+          (adminStats.value?.aiRequests || []).reduce((sum, item) => sum + Number(item.count || 0), 0)
+        ));
+
+        const navItems = computed(() => [
+          { id: "overview", mark: "OV", label: "总览", count: adminStats.value ? "实" : "--" },
+          { id: "users", mark: "US", label: "用户与积分", count: adminStats.value?.users?.count ?? "--" },
+          { id: "redeem", mark: "RC", label: "兑换码", count: adminStats.value?.redeemCodes?.count ?? "--" },
+          { id: "routes", mark: "RT", label: "路由池", count: routePoolSummary.value.enabled || "--" },
+          { id: "requests", mark: "AI", label: "AI 请求", count: aiRequestTotal.value || "--" }
+        ]);
+
+        const metrics = computed(() => {
+          const stats = adminStats.value;
+          const aiSummary = (stats?.aiRequests || []).map((item) => `${item.status}: ${item.count}`).join(" · ") || "登录后加载 /admin/stats";
+          const activeUsers = stats?.users?.active_count ?? stats?.users?.activeCount ?? "--";
+          return [
+            { label: "正常用户", value: activeUsers, note: "来自 GET /admin/stats 的 users.active_count", tone: stats ? "good" : "" },
+            { label: "积分总余额", value: stats?.credits?.total_balance ?? "--", note: "来自 credit_accounts.balance 汇总", tone: "" },
+            { label: "兑换码", value: stats?.redeemCodes?.count ?? "--", note: stats ? `已使用 ${stats.redeemCodes?.used_count ?? 0} 次` : "来自 redeem_codes 汇总", tone: "" },
+            { label: "AI 请求", value: aiRequestTotal.value || "--", note: aiSummary, tone: "" }
+          ];
+        });
+
+        const trendPlot = computed(() => {
+          const rows = activityBars.value;
+          const top = 20;
+          const bottom = 202;
+          const left = 34;
+          const right = 686;
+          const gridLines = [top, Math.round((top + bottom) / 2), bottom].map((y) => ({ y }));
+          if (!rows.length) {
+            return { points: [], linePath: "", areaPath: "", gridLines };
+          }
+
+          const max = Math.max(1, ...rows.map((item) => Number(item.total || 0)));
+          const step = rows.length > 1 ? (right - left) / (rows.length - 1) : 0;
+          const points = rows.map((item, index) => {
+            const total = Number(item.total || 0);
+            const x = rows.length > 1 ? left + (step * index) : (left + right) / 2;
+            const y = bottom - ((total / max) * (bottom - top));
+            return {
+              ...item,
+              x: Number(x.toFixed(2)),
+              y: Number(y.toFixed(2)),
+              valueY: Number(Math.max(14, y - 10).toFixed(2))
+            };
+          });
+          const linePath = points.map((point, index) => `${index ? "L" : "M"} ${point.x} ${point.y}`).join(" ");
+          const first = points[0];
+          const last = points[points.length - 1];
+          const areaPath = `${linePath} L ${last.x} ${bottom} L ${first.x} ${bottom} Z`;
+          return { points, linePath, areaPath, gridLines };
+        });
+
+        const trendPoints = computed(() => trendPlot.value.points);
+        const trendLinePath = computed(() => trendPlot.value.linePath);
+        const trendAreaPath = computed(() => trendPlot.value.areaPath);
+        const trendGridLines = computed(() => trendPlot.value.gridLines);
+
+        const healthItems = computed(() => {
+          const health = healthState.value;
+          const toItem = (name, ok, desc) => ({
+            name,
+            desc,
+            status: health ? (ok ? "正常" : "异常") : "未加载",
+            tone: health ? (ok ? "status-ok" : "status-bad") : "status-warn"
+          });
+          return [
+            toItem("D1 数据库", !!health?.db, "photo-react-auth"),
+            toItem("R2 图片桶", !!health?.r2, "apitu / tmp 公开读取"),
+            toItem("Rate Limit KV", !!health?.rateLimit?.kvConfigured, "登录、兑换、上传限流"),
+            {
+              name: "AI 路由池",
+              desc: health?.ai?.routeCount != null ? `${health.ai.routeCount} 条路由` : "等待 /health",
+              status: health ? (health.ai?.upstreamConfigured ? "正常" : "异常") : "未加载",
+              tone: health ? (health.ai?.upstreamConfigured ? "status-ok" : "status-bad") : "status-warn"
+            }
+          ];
+        });
+
+        const routeRows = computed(() => [...aiRoutes.value, ...fallbackAiRoutes.value]);
+
+        const routePoolSummary = computed(() => {
+          const raw = routePoolSummaryRaw.value || {};
+          const routes = aiRoutes.value;
+          const fallback = fallbackAiRoutes.value;
+          return {
+            count: raw.count ?? routes.length,
+            enabled: raw.enabled ?? routes.filter((route) => route.enabled).length,
+            fallbackCount: raw.fallbackCount ?? fallback.length,
+            maxRoutes: raw.maxRoutes ?? 50,
+            keyEncryptionConfigured: raw.keyEncryptionConfigured ?? healthState.value?.ai?.routeKeyEncryptionConfigured ?? false
+          };
+        });
+
+        const searchText = computed(() => globalSearch.value.toLowerCase());
+
+        const filteredUsers = computed(() => {
+          const text = searchText.value;
+          return users.value
+            .filter((user) => userStatusFilter.value === "all" || user.status === userStatusFilter.value)
+            .filter((user) => !text || [user.displayName, user.username, user.statusLabel].some((value) => String(value).toLowerCase().includes(text)))
+            .sort((a, b) => {
+              if (userSort.value === "balance") return b.balance - a.balance;
+              if (userSort.value === "creditValue") return b.balance - a.balance;
+              if (userSort.value === "created") return b.created.localeCompare(a.created);
+              return b.lastLogin.localeCompare(a.lastLogin);
+            });
+        });
+
+        const selectedUser = computed(() => {
+          const listUser = users.value.find((user) => user.id === selectedUserId.value) || null;
+          if (selectedUserDetail.value?.id === selectedUserId.value) return { ...(listUser || {}), ...selectedUserDetail.value };
+          return listUser;
+        });
+
+        const statusActionLabel = computed(() => (
+          adminDialogUser.value?.status === "active" ? "已禁用" : "正常"
+        ));
+
+        const selectedCashLedgerStatus = computed(() => {
+          const cash = selectedCashLedger.value;
+          if (!cash) return "选择用户后会查询真实充值流水接口。";
+          if (cash.schemaMissing) return "远端 D1 当前没有 cash/payment 账务表，因此没有真实充值金额记录可列。";
+          if (!cash.ledger?.length) return "未查询到充值流水。";
+          return `已查询到 ${cash.ledger.length} 条充值流水。`;
+        });
+
+        const filteredRequests = computed(() => {
+          const text = searchText.value;
+          return requestRows.value
+            .filter((row) => requestStatusFilter.value === "all" || row.status === requestStatusFilter.value)
+            .filter((row) => routeFilter.value === "all" || row.route === routeFilter.value)
+            .filter((row) => !text || [row.id, row.user, row.mode, row.status, row.route, row.prompt].some((value) => String(value).toLowerCase().includes(text)));
+        });
+
+        const redeemStatusColumns = computed(() => {
+          const configs = [
+            { id: "available", title: "可用兑换码", desc: "未过期、未禁用且仍有剩余次数。" },
+            { id: "used", title: "已用兑换码", desc: "使用次数已经达到上限。" },
+            { id: "abandoned", title: "废弃兑换码", desc: "已禁用或已过期，不再可用。" }
+          ];
+          return configs.map((config) => {
+            const rows = redeemBatches.value.filter((item) => item.bucket === config.id);
+            const groupMap = new Map();
+            for (const item of rows) {
+              if (!groupMap.has(item.credits)) groupMap.set(item.credits, { credits: item.credits, label: `${item.credits} 积分`, items: [] });
+              groupMap.get(item.credits).items.push(item);
+            }
+            const groups = [...groupMap.values()]
+              .sort((a, b) => b.credits - a.credits)
+              .map((group) => ({
+                ...group,
+                items: group.items.sort((a, b) => b.sortTime.localeCompare(a.sortTime))
+              }));
+            return { ...config, count: rows.length, groups };
+          });
+        });
+
+        const selectedRequest = computed(() => fetchedRequest.value || requestRows.value.find((row) => row.id === selectedRequestId.value) || null);
+
+        const formatMoney = (value) => {
+          const amount = Number(value);
+          return `¥${Number.isFinite(amount) ? amount.toFixed(2) : "0.00"}`;
+        };
+
+        const formatOptionalMoney = (value) => (
+          value == null || value === "" ? "未接入" : formatMoney(value)
+        );
+
+        const formatCreditValue = (credits) => formatMoney(Number(credits || 0) * CREDIT_VALUE_CNY);
+
+        const redeemGroupKey = (columnId, credits) => `${columnId}:${credits}`;
+
+        const isRedeemGroupExpanded = (columnId, credits) => (
+          Boolean(redeemExpandedGroups.value[redeemGroupKey(columnId, credits)])
+        );
+
+        const toggleRedeemGroup = (columnId, credits) => {
+          const key = redeemGroupKey(columnId, credits);
+          redeemExpandedGroups.value = {
+            ...redeemExpandedGroups.value,
+            [key]: !redeemExpandedGroups.value[key]
+          };
+        };
+
+        const formatDateTime = (value) => {
+          if (!value) return "--";
+          const date = new Date(value);
+          if (Number.isNaN(date.getTime())) return String(value);
+          const pad = (number) => String(number).padStart(2, "0");
+          return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+        };
+
+        const formatHourLabel = (value) => {
+          const date = new Date(value);
+          return Number.isNaN(date.getTime()) ? String(value || "--") : `${String(date.getHours()).padStart(2, "0")}:00`;
+        };
+
+        const normalizeAdminUser = (user) => ({
+          id: user.id,
+          displayName: user.displayName || user.display_name || user.username || user.id,
+          username: user.username || user.id,
+          status: user.status || "unknown",
+          statusLabel: user.status === "active" ? "正常" : (user.status === "disabled" ? "已禁用" : user.status || "未知"),
+          balance: Number(user.credits?.balance ?? user.balance ?? 0),
+          cashBalance: user.cash?.available ? user.cash.balance : null,
+          lifetimeRecharge: user.cash?.available ? user.cash.lifetimeRecharge : null,
+          spent: Number(user.credits?.lifetimeSpent ?? user.lifetimeSpent ?? user.spent ?? 0),
+          earned: Number(user.credits?.lifetimeEarned ?? user.lifetimeEarned ?? 0),
+          lastLogin: formatDateTime(user.lastLoginAt || user.last_login_at),
+          created: user.createdAt || user.created_at || "",
+          note: user.cash?.available
+            ? "已接入充值账务。"
+            : "真钱充值账务未接入；这里显示的是该真实用户的账号和积分账户数据。"
+        });
+
+        const normalizeAdminRequest = (request) => ({
+          id: request.id,
+          user: request.displayName || request.username || request.userId || "--",
+          userId: request.userId || request.user_id || "",
+          mode: request.mode || (Number(request.imageCount || request.image_count || 0) > 0 ? "image_to_image" : "text_to_image"),
+          status: request.status || "unknown",
+          cost: Number(request.cost || 0),
+          route: request.route || request.metadata?.route?.id || request.metadata?.route?.provider || "--",
+          time: formatDateTime(request.createdAt || request.created_at),
+          upstreamStatus: request.upstreamStatus || request.upstream_status || null,
+          prompt: request.prompt || "",
+          error: request.error || "",
+          metadata: request.metadata || null
+        });
+
+        const normalizeAiRouteConfig = (route) => ({
+          id: route.id || "",
+          provider: route.provider || route.id || "",
+          baseUrl: route.baseUrl || route.base_url || "",
+          baseHost: route.baseHost || "",
+          apiKeyConfigured: Boolean(route.apiKeyConfigured),
+          apiKeyHint: route.apiKeyHint || "",
+          model: route.model || "",
+          imageGeneratePath: route.imageGeneratePath || route.image_generate_path || "",
+          imageEditPath: route.imageEditPath || route.image_edit_path || "",
+          imageMultipartMode: route.imageMultipartMode || route.image_multipart_mode || "",
+          priority: Number(route.priority || 0),
+          enabled: route.enabled !== false,
+          note: route.note || "",
+          source: route.source || "d1",
+          readOnly: Boolean(route.readOnly),
+          stats: route.stats || null,
+          createdAt: route.createdAt || route.created_at || "",
+          updatedAt: route.updatedAt || route.updated_at || ""
+        });
+
+        const formatPercent = (value) => {
+          const number = Number(value);
+          return Number.isFinite(number) ? `${Math.round(number * 100)}%` : "--";
+        };
+
+        const formatLatency = (value) => {
+          const number = Number(value);
+          if (!Number.isFinite(number)) return "--";
+          return number >= 1000 ? `${(number / 1000).toFixed(1)}s` : `${Math.round(number)}ms`;
+        };
+
+        const normalizeSummaryBars = (summary) => {
+          const buckets = Array.isArray(summary?.buckets) ? summary.buckets : [];
+          return buckets.map((item) => ({
+            label: item.bucket ? formatHourLabel(item.bucket) : (item.label || "--"),
+            total: Number(item.total || 0),
+            success: Number(item.success || 0),
+            failed: Number(item.failed || 0),
+            refunded: Number(item.refunded || 0),
+            pending: Number(item.pending || 0),
+            cost: Number(item.cost || 0)
+          }));
+        };
+
+        const normalizeRedeemBatch = (code) => {
+          const statusMap = {
+            active: ["可用", "status-ok", "available"],
+            available: ["可用", "status-ok", "available"],
+            used: ["已用完", "status-warn", "used"],
+            expired: ["已过期", "status-warn", "abandoned"],
+            disabled: ["已禁用", "status-bad", "abandoned"]
+          };
+          const used = Number(code.usedCount ?? code.redemptionCount ?? 0);
+          const total = Number(code.maxUses || 1);
+          const rawStatus = code.status || (used >= total ? "used" : "active");
+          const [status, tone, mappedBucket] = statusMap[rawStatus] || [rawStatus || "未知", "status-warn", "abandoned"];
+          return {
+            key: code.codeHash || code.id || code.codeHint,
+            label: code.codeHint || `${String(code.codeHash || code.id || "").slice(0, 12)}...`,
+            note: code.note || (code.lastRedeemedAt ? `最近兑换：${formatDateTime(code.lastRedeemedAt)}` : `创建：${formatDateTime(code.createdAt)}`),
+            credits: Number(code.credits || 0),
+            used,
+            total,
+            status,
+            tone,
+            bucket: mappedBucket,
+            createdAt: formatDateTime(code.createdAt),
+            sortTime: code.createdAt || ""
+          };
+        };
+
+        const normalizeAuditLog = (log) => ({
+          id: log.id,
+          action: log.action || "--",
+          actor: log.actor || "admin",
+          time: formatDateTime(log.createdAt || log.created_at),
+          target: log.target || [log.targetType || log.target_type, log.targetId || log.target_id].filter(Boolean).join(":") || "--"
+        });
+
+        const normalizeCreditLedgerRow = (row) => {
+          const delta = Number(row.delta || 0);
+          return {
+            id: row.id,
+            type: row.type || "--",
+            delta,
+            deltaText: `${delta >= 0 ? "+" : ""}${delta}`,
+            balanceAfter: Number(row.balanceAfter ?? row.balance_after ?? 0),
+            reason: row.reason || "",
+            time: formatDateTime(row.createdAt || row.created_at)
+          };
+        };
+
+        const statusClass = (status) => {
+          if (status === "success" || status === "正常" || status === "启用") return "status-ok";
+          if (status === "failed" || status === "已禁用") return "status-bad";
+          return "status-warn";
+        };
+
+        const apiUrl = (path) => `${workerUrl.value.replace(/\/+$/, "")}${path}`;
+
+        const setConnection = (title, message, tone = "", tag = "状态") => {
+          connectionTitle.value = title;
+          connectionMessage.value = message;
+          connectionTone.value = tone;
+          connectionTag.value = tag;
+        };
+
+        const dismissConnection = () => {
+          connectionMessage.value = "";
+          connectionTone.value = "";
+        };
+
+        const fetchJson = async (path, options = {}) => {
+          const response = await fetch(apiUrl(path), options);
+          const text = await response.text();
+          const data = text ? JSON.parse(text) : {};
+          if (!response.ok || data.ok === false) {
+            throw new Error(data.error || data.message || `HTTP ${response.status}`);
+          }
+          return data;
+        };
+
+        const adminHeaders = () => ({
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${adminAuthToken.value}`
+        });
+
+        const explainFetchError = (error) => {
+          const message = String(error?.message || error || "请求失败");
+          if (/Failed to fetch|NetworkError|Load failed/i.test(message)) {
+            return "请求被浏览器拦截或网络不可达。若你直接用 file:// 打开本页，请改用允许来源打开，例如 http://localhost:5173/admin.html；或把该来源加入 Worker 的 ALLOWED_ORIGINS。";
+          }
+          return message;
+        };
+
+        let realtimeTimer = null;
+
+        const persistAdminAuth = ({ token, admin, expiresAt }) => {
+          if (token) adminAuthToken.value = String(token || "").trim();
+          if (admin) adminAuthUser.value = admin;
+          const payload = {
+            token: adminAuthToken.value,
+            admin: adminAuthUser.value,
+            expiresAt: expiresAt || ""
+          };
+          if (payload.token) localStorage.setItem(ADMIN_AUTH_STORAGE_KEY, JSON.stringify(payload));
+        };
+
+        const clearAdminAuth = () => {
+          adminAuthToken.value = "";
+          adminAuthUser.value = null;
+          localStorage.removeItem(ADMIN_AUTH_STORAGE_KEY);
+          if (realtimeTimer) {
+            clearInterval(realtimeTimer);
+            realtimeTimer = null;
+          }
+        };
+
+        const startRealtimeRefresh = () => {
+          if (realtimeTimer) clearInterval(realtimeTimer);
+          realtimeTimer = setInterval(() => {
+            if (adminAuthenticated.value) loadRealData({ quiet: true });
+          }, 30000);
+        };
+
+        const restoreAdminSession = async () => {
+          try {
+            const raw = localStorage.getItem(ADMIN_AUTH_STORAGE_KEY);
+            if (!raw) return false;
+            const stored = JSON.parse(raw);
+            if (!stored?.token) return false;
+            adminAuthToken.value = String(stored.token || "").trim();
+            adminAuthUser.value = stored.admin || null;
+            const result = await fetchJson("/admin/auth/me", { headers: adminHeaders() });
+            persistAdminAuth({ token: adminAuthToken.value, admin: result.admin, expiresAt: stored.expiresAt || "" });
+            startRealtimeRefresh();
+            await loadRealData({ quiet: true });
+            return true;
+          } catch {
+            clearAdminAuth();
+            return false;
+          }
+        };
+
+        const setAdminAuthMode = (mode) => {
+          adminAuthMode.value = mode === "register" ? "register" : "login";
+          adminAuthForm.value.password = "";
+          adminAuthForm.value.confirmPassword = "";
+          adminAuthForm.value.adminSecret = "";
+        };
+
+        const submitAdminAuth = async () => {
+          const form = adminAuthForm.value;
+          const username = form.username.trim();
+          const password = String(form.password || "");
+          if (!username || !password) {
+            setConnection("缺少登录信息", "请输入管理员账号和密码。", "error", "缺少信息");
+            return;
+          }
+          if (adminAuthMode.value === "register") {
+            if (password !== String(form.confirmPassword || "")) {
+              setConnection("两次密码不一致", "请确认管理员密码。", "error", "格式错误");
+              return;
+            }
+            if (!form.adminSecret.trim()) {
+              setConnection("缺少 ADMIN_SECRET", "注册管理员账户需要输入后端配置的 ADMIN_SECRET。", "error", "需要密钥");
+              return;
+            }
+          }
+          adminAuthBusy.value = true;
+          try {
+            const path = adminAuthMode.value === "register" ? "/admin/auth/register" : "/admin/auth/login";
+            const result = await fetchJson(path, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                username,
+                password,
+                adminSecret: adminAuthMode.value === "register" ? form.adminSecret.trim() : undefined
+              })
+            });
+            persistAdminAuth({ token: result.token, admin: result.admin, expiresAt: result.expiresAt });
+            adminAuthForm.value.password = "";
+            adminAuthForm.value.confirmPassword = "";
+            adminAuthForm.value.adminSecret = "";
+            activeSection.value = "overview";
+            await loadRealData({ quiet: true });
+            startRealtimeRefresh();
+            setConnection(adminAuthMode.value === "register" ? "管理员已注册" : "管理员已登录", "控制台数据已开始实时刷新。", "", "已进入");
+          } catch (error) {
+            setConnection(adminAuthMode.value === "register" ? "管理员注册失败" : "管理员登录失败", explainFetchError(error), "error", "失败");
+          } finally {
+            adminAuthBusy.value = false;
+          }
+        };
+
+        const logoutAdmin = async () => {
+          try {
+            if (adminAuthToken.value) {
+              await fetchJson("/admin/auth/logout", {
+                method: "POST",
+                headers: adminHeaders(),
+                body: JSON.stringify({})
+              });
+            }
+          } catch {
+            // Local logout still proceeds if the remote session is already invalid.
+          } finally {
+            clearAdminAuth();
+            adminStats.value = null;
+            users.value = [];
+            requestRows.value = [];
+            redeemBatches.value = [];
+            aiRoutes.value = [];
+            fallbackAiRoutes.value = [];
+            routePoolSummaryRaw.value = null;
+            routePoolFallbackError.value = "";
+            routeTestResults.value = {};
+            auditLogs.value = [];
+            activeSection.value = "overview";
+            setConnection("管理员已退出", "需要重新登录后才能进入控制台。", "", "已退出");
+          }
+        };
+
+        const loadHealth = async () => {
+          loading.value = true;
+          try {
+            healthState.value = await fetchJson("/health");
+            setConnection("健康接口已连接", `Worker 版本：${healthState.value.version || "unknown"}`, "", "health");
+          } catch (error) {
+            setConnection("健康接口连接失败", explainFetchError(error), "error", "失败");
+          } finally {
+            loading.value = false;
+          }
+        };
+
+        const loadRealData = async ({ quiet = false } = {}) => {
+          loading.value = true;
+          try {
+            try {
+              healthState.value = await fetchJson("/health");
+            } catch {
+              healthState.value = null;
+            }
+            if (!adminAuthToken.value.trim()) {
+              if (!quiet) setConnection("管理员未登录", "请先登录管理员账户。", "error", "需要登录");
+              return;
+            }
+            adminStats.value = await fetchJson("/admin/stats", { headers: adminHeaders() });
+            const [usersOk, requestsOk, redeemOk, routesOk, auditOk] = await Promise.all([
+              loadUsers({ quiet: true }),
+              loadAiRequests({ quiet: true }),
+              loadRedeemCodes({ quiet: true }),
+              loadAiRoutes({ quiet: true }),
+              loadAuditLogs({ quiet: true })
+            ]);
+            const allOk = usersOk && requestsOk && redeemOk && routesOk && auditOk;
+            if (!quiet) {
+              setConnection(
+                allOk ? "管理统计和全部列表已加载" : "管理统计已加载，部分列表未加载",
+                allOk
+                  ? "已读取 `/admin/stats`、用户、AI 请求、趋势、兑换码、路由池和审计日志。"
+                  : "已读取 `/admin/stats`；个别列表接口可能尚未部署或返回空状态。",
+                allOk ? "" : "error",
+                allOk ? "真实数据" : "部分数据"
+              );
+            }
+          } catch (error) {
+            if (!quiet) setConnection("真实数据加载失败", explainFetchError(error), "error", "失败");
+          } finally {
+            loading.value = false;
+          }
+        };
+
+        const loadUsers = async ({ quiet = false } = {}) => {
+          if (!adminAuthToken.value.trim()) {
+            if (!quiet) setConnection("管理员未登录", "真实用户列表需要管理员登录。", "error", "需要登录");
+            return false;
+          }
+          usersBusy.value = true;
+          try {
+            const params = new URLSearchParams({
+              limit: "100",
+              sort: userSort.value === "creditValue" ? "balance" : userSort.value
+            });
+            if (userStatusFilter.value !== "all") params.set("status", userStatusFilter.value);
+            if (globalSearch.value) params.set("q", globalSearch.value);
+            const result = await fetchJson(`/admin/users?${params.toString()}`, {
+              headers: adminHeaders()
+            });
+            users.value = (result.users || []).map(normalizeAdminUser);
+            userPagination.value = result.pagination || null;
+            usersLoaded.value = true;
+            if (!selectedUserId.value && users.value.length) await selectUser(users.value[0].id, { quiet: true });
+            if (!quiet) setConnection("真实用户列表已加载", `已从 /admin/users 读取 ${users.value.length} 个用户。`, "", "真实数据");
+            return true;
+          } catch (error) {
+            usersLoaded.value = false;
+            if (!quiet) setConnection("真实用户列表加载失败", explainFetchError(error), "error", "失败");
+            return false;
+          } finally {
+            usersBusy.value = false;
+          }
+        };
+
+        const selectUser = async (userId, { quiet = false } = {}) => {
+          selectedUserId.value = userId;
+          selectedUserDetail.value = null;
+          selectedCreditLedger.value = [];
+          selectedCashLedger.value = null;
+          if (!adminAuthToken.value.trim() || !userId) return;
+          try {
+            const [detailResult, ledgerResult, cashResult] = await Promise.all([
+              fetchJson(`/admin/users/${encodeURIComponent(userId)}`, { headers: adminHeaders() }),
+              fetchJson(`/admin/users/${encodeURIComponent(userId)}/credit-ledger?limit=10`, { headers: adminHeaders() }),
+              fetchJson(`/admin/users/${encodeURIComponent(userId)}/cash-ledger?limit=10`, { headers: adminHeaders() })
+            ]);
+            selectedUserDetail.value = normalizeAdminUser(detailResult.user);
+            selectedCreditLedger.value = (ledgerResult.ledger || detailResult.creditLedger || []).map(normalizeCreditLedgerRow);
+            selectedCashLedger.value = cashResult.cash || cashResult;
+            if (!quiet) setConnection("真实用户详情已加载", `已读取用户 ${selectedUserDetail.value.username} 的详情、积分流水和充值流水状态。`, "", "真实数据");
+          } catch (error) {
+            if (!quiet) setConnection("真实用户详情加载失败", explainFetchError(error), "error", "失败");
+          }
+        };
+
+        const refreshAfterUserAction = async (userId) => {
+          await Promise.allSettled([
+            loadUsers({ quiet: true }),
+            loadAuditLogs({ quiet: true }),
+            fetchJson("/admin/stats", { headers: adminHeaders() }).then((stats) => {
+              adminStats.value = stats;
+            })
+          ]);
+          await selectUser(userId, { quiet: true });
+        };
+
+        const ensureAdminUserActionReady = () => {
+          if (!selectedUser.value?.id) {
+            setConnection("未选择用户", "请先在用户列表中选择一个真实用户。", "error", "缺少用户");
+            return false;
+          }
+          if (!adminAuthToken.value.trim()) {
+            setConnection("管理员未登录", "管理员写操作需要登录账户。", "error", "需要登录");
+            return false;
+          }
+          return true;
+        };
+
+        const frontendAuthUser = () => {
+          try {
+            const raw = localStorage.getItem("photo_react_auth_v1");
+            if (!raw) return null;
+            const parsed = JSON.parse(raw);
+            return parsed?.user || null;
+          } catch {
+            return null;
+          }
+        };
+
+        const isCurrentFrontendUser = (userId) => {
+          const current = frontendAuthUser();
+          return Boolean(current?.id && userId && current.id === userId);
+        };
+
+        const openCreditAdjustDialog = () => {
+          if (!ensureAdminUserActionReady()) return;
+          adminDialogUser.value = { ...selectedUser.value };
+          creditAdjustForm.value = { delta: "" };
+          adminActionReason.value = "";
+          adminDialog.value = {
+            type: "credit",
+            title: "调整用户积分",
+            desc: "正数增加积分，负数扣减积分；提交后会写入积分流水和审计日志。",
+            primary: "确认调整",
+            tone: "primary"
+          };
+        };
+
+        const openUserStatusDialog = () => {
+          if (!ensureAdminUserActionReady()) return;
+          const disabling = selectedUser.value.status === "active";
+          if (disabling && isCurrentFrontendUser(selectedUser.value.id)) {
+            setConnection("已阻止禁用当前登录账号", "你当前浏览器前台登录的账号就是这个用户。禁用它会让登录状态立即失效，请换一个管理员浏览器或先退出该账号后再操作。", "error", "已阻止");
+            return;
+          }
+          adminDialogUser.value = { ...selectedUser.value };
+          adminActionReason.value = "";
+          adminDialog.value = {
+            type: "status",
+            title: disabling ? "禁用用户" : "启用用户",
+            desc: disabling ? "禁用后该用户无法继续登录或调用需要登录的接口。" : "启用后该用户可以重新登录使用服务。",
+            primary: disabling ? "确认禁用" : "确认启用",
+            tone: disabling ? "danger" : "primary"
+          };
+        };
+
+        const closeAdminDialog = () => {
+          if (adminActionBusy.value) return;
+          adminDialog.value = null;
+          adminDialogUser.value = null;
+          adminActionReason.value = "";
+          creditAdjustForm.value = { delta: "" };
+        };
+
+        const submitAdminDialog = async () => {
+          if (!adminDialog.value || !adminDialogUser.value) return;
+          if (!adminAuthToken.value.trim()) {
+            setConnection("管理员未登录", "管理员写操作需要登录账户。", "error", "需要登录");
+            return;
+          }
+          const user = adminDialogUser.value;
+          const reason = adminActionReason.value.trim();
+          if (!reason) {
+            setConnection("缺少操作原因", "禁用用户和调整积分都必须填写原因，便于审计追踪。", "error", "需要原因");
+            return;
+          }
+
+          adminActionBusy.value = true;
+          try {
+            if (adminDialog.value.type === "credit") {
+              const deltaValue = Number(creditAdjustForm.value.delta);
+              if (!Number.isInteger(deltaValue) || deltaValue === 0) {
+                setConnection("积分调整无效", "请输入非 0 的整数积分；正数增加，负数扣减。", "error", "格式错误");
+                return;
+              }
+              const result = await fetchJson(`/admin/users/${encodeURIComponent(user.id)}/credit-adjustments`, {
+                method: "POST",
+                headers: adminHeaders(),
+                body: JSON.stringify({ delta: deltaValue, reason })
+              });
+              adminDialog.value = null;
+              adminDialogUser.value = null;
+              adminActionReason.value = "";
+              creditAdjustForm.value = { delta: "" };
+              await refreshAfterUserAction(user.id);
+              setConnection("积分已调整", `用户 ${user.username} 积分 ${deltaValue > 0 ? "+" : ""}${deltaValue}，当前余额 ${result.adjustment?.balanceAfter ?? "已刷新"}。`, "", "已执行");
+              return;
+            }
+
+            if (adminDialog.value.type === "status") {
+              const targetStatus = user.status === "active" ? "disabled" : "active";
+              if (targetStatus === "disabled" && isCurrentFrontendUser(user.id)) {
+                setConnection("已阻止禁用当前登录账号", "该操作会让当前登录状态立即失效，已取消执行。", "error", "已阻止");
+                return;
+              }
+              await fetchJson(`/admin/users/${encodeURIComponent(user.id)}/status`, {
+                method: "PATCH",
+                headers: adminHeaders(),
+                body: JSON.stringify({ status: targetStatus, reason })
+              });
+              adminDialog.value = null;
+              adminDialogUser.value = null;
+              adminActionReason.value = "";
+              creditAdjustForm.value = { delta: "" };
+              await refreshAfterUserAction(user.id);
+              setConnection(targetStatus === "disabled" ? "用户已禁用" : "用户已启用", `用户 ${user.username} 状态已更新并写入审计日志。`, "", "已执行");
+            }
+          } catch (error) {
+            setConnection("管理员操作失败", explainFetchError(error), "error", "失败");
+          } finally {
+            adminActionBusy.value = false;
+          }
+        };
+
+        const loadAiRequests = async ({ quiet = false } = {}) => {
+          if (!adminAuthToken.value.trim()) {
+            if (!quiet) setConnection("管理员未登录", "真实 AI 请求列表需要管理员登录。", "error", "需要登录");
+            return false;
+          }
+          requestsBusy.value = true;
+          try {
+            const params = new URLSearchParams({ limit: "50" });
+            if (requestStatusFilter.value !== "all") params.set("status", requestStatusFilter.value);
+            if (globalSearch.value) params.set("q", globalSearch.value);
+            if (routeFilter.value !== "all") params.set("route", routeFilter.value);
+            const [listResult, summaryResult] = await Promise.all([
+              fetchJson(`/admin/ai-requests?${params.toString()}`, { headers: adminHeaders() }),
+              fetchJson("/admin/ai-requests/summary?hours=12", { headers: adminHeaders() })
+            ]);
+            requestRows.value = (listResult.requests || []).map(normalizeAdminRequest);
+            requestPagination.value = listResult.pagination || null;
+            requestSummary.value = summaryResult || null;
+            activityBars.value = normalizeSummaryBars(summaryResult);
+            requestsLoaded.value = true;
+            if (!selectedRequestId.value && requestRows.value.length) selectedRequestId.value = requestRows.value[0].id;
+            if (!quiet) setConnection("真实 AI 请求已加载", `已读取 ${requestRows.value.length} 条最近请求和近 12 小时趋势。`, "", "真实数据");
+            return true;
+          } catch (error) {
+            requestsLoaded.value = false;
+            if (!quiet) setConnection("真实 AI 请求加载失败", explainFetchError(error), "error", "失败");
+            return false;
+          } finally {
+            requestsBusy.value = false;
+          }
+        };
+
+        const loadRedeemCodes = async ({ quiet = false } = {}) => {
+          if (!adminAuthToken.value.trim()) {
+            if (!quiet) setConnection("管理员未登录", "真实兑换码列表需要管理员登录。", "error", "需要登录");
+            return false;
+          }
+          try {
+            const result = await fetchJson("/admin/redeem-codes?limit=5000", { headers: adminHeaders() });
+            redeemBatches.value = (result.codes || result.redeemCodes || []).map(normalizeRedeemBatch);
+            if (!quiet) setConnection("真实兑换码列表已加载", `已读取 ${redeemBatches.value.length} 个兑换码。`, "", "真实数据");
+            return true;
+          } catch (error) {
+            if (!quiet) setConnection("真实兑换码列表加载失败", explainFetchError(error), "error", "失败");
+            return false;
+          }
+        };
+
+        const resetRedeemForm = () => {
+          redeemForm.value = {
+            credits: 99,
+            count: 1,
+            maxUses: 1,
+            prefix: "PR",
+            expiresAt: "",
+            note: ""
+          };
+          generatedCodes.value = [];
+        };
+
+        const createRedeemCodes = async () => {
+          if (!adminAuthToken.value.trim()) {
+            setConnection("管理员未登录", "生成兑换码需要管理员登录。", "error", "需要登录");
+            return;
+          }
+          const form = redeemForm.value;
+          const credits = Math.trunc(Number(form.credits || 0));
+          const count = Math.trunc(Number(form.count || 0));
+          const maxUses = Math.trunc(Number(form.maxUses || 0));
+          if (credits < 1 || count < 1 || count > 100 || maxUses < 1) {
+            setConnection("兑换码参数无效", "积分面额和使用次数必须大于 0，单次生成数量为 1-100。", "error", "格式错误");
+            return;
+          }
+          redeemBusy.value = true;
+          try {
+            const result = await fetchJson("/admin/redeem-codes", {
+              method: "POST",
+              headers: adminHeaders(),
+              body: JSON.stringify({
+                credits,
+                count,
+                maxUses,
+                prefix: form.prefix || "PR",
+                expiresAt: form.expiresAt ? new Date(form.expiresAt).toISOString() : null,
+                note: form.note || ""
+              })
+            });
+            generatedCodes.value = result.codes || [];
+            await Promise.allSettled([
+              loadRedeemCodes({ quiet: true }),
+              loadAuditLogs({ quiet: true }),
+              fetchJson("/admin/stats", { headers: adminHeaders() }).then((stats) => {
+                adminStats.value = stats;
+              })
+            ]);
+            setConnection("兑换码已生成", `本次生成 ${generatedCodes.value.length} 个 ${credits} 积分兑换码。`, "", "已生成");
+          } catch (error) {
+            setConnection("兑换码生成失败", explainFetchError(error), "error", "失败");
+          } finally {
+            redeemBusy.value = false;
+          }
+        };
+
+        const resetRouteForm = () => {
+          routeFormMode.value = "create";
+          routeForm.value = {
+            id: "",
+            provider: "",
+            baseUrl: "",
+            apiKey: "",
+            model: "",
+            imageGeneratePath: "/v1/images/generations",
+            imageEditPath: "",
+            imageMultipartMode: "",
+            priority: Math.max(1, aiRoutes.value.length + 1),
+            enabled: true,
+            note: ""
+          };
+        };
+
+        const loadAiRoutes = async ({ quiet = false } = {}) => {
+          if (!adminAuthToken.value.trim()) {
+            if (!quiet) setConnection("管理员未登录", "路由池需要管理员登录。", "error", "需要登录");
+            return false;
+          }
+          routePoolBusy.value = true;
+          try {
+            const result = await fetchJson("/admin/ai-routes", { headers: adminHeaders() });
+            aiRoutes.value = (result.routes || []).map(normalizeAiRouteConfig);
+            fallbackAiRoutes.value = (result.fallbackRoutes || []).map(normalizeAiRouteConfig);
+            routePoolSummaryRaw.value = {
+              ...(result.summary || {}),
+              keyEncryptionConfigured: result.keyEncryptionConfigured
+            };
+            routePoolFallbackError.value = result.fallbackError || "";
+            routePoolLoaded.value = true;
+            if (routeFormMode.value === "create" && !routeForm.value.id) resetRouteForm();
+            if (!quiet) setConnection("路由池已加载", `已读取 ${aiRoutes.value.length} 条 D1 路由，${fallbackAiRoutes.value.length} 条环境回退路由。`, "", "真实数据");
+            return true;
+          } catch (error) {
+            if (!quiet) setConnection("路由池加载失败", explainFetchError(error), "error", "失败");
+            return false;
+          } finally {
+            routePoolBusy.value = false;
+          }
+        };
+
+        const editAiRoute = (route) => {
+          routeFormMode.value = "edit";
+          routeForm.value = {
+            id: route.id,
+            provider: route.provider,
+            baseUrl: route.baseUrl,
+            apiKey: "",
+            model: route.model || "",
+            imageGeneratePath: route.imageGeneratePath || "/v1/images/generations",
+            imageEditPath: route.imageEditPath || "",
+            imageMultipartMode: route.imageMultipartMode || "",
+            priority: route.priority || 1,
+            enabled: route.enabled,
+            note: route.note || ""
+          };
+        };
+
+        const routeFormPayload = () => {
+          const form = routeForm.value;
+          const payload = {
+            id: form.id.trim(),
+            provider: form.provider.trim() || form.id.trim(),
+            baseUrl: form.baseUrl.trim(),
+            model: form.model || "",
+            imageGeneratePath: form.imageGeneratePath.trim() || "/v1/images/generations",
+            imageEditPath: form.imageEditPath.trim(),
+            imageMultipartMode: form.imageMultipartMode || "",
+            priority: Math.trunc(Number(form.priority || 1)),
+            enabled: Boolean(form.enabled),
+            note: form.note.trim()
+          };
+          if (form.apiKey.trim()) payload.apiKey = form.apiKey.trim();
+          return payload;
+        };
+
+        const saveAiRoute = async () => {
+          if (!adminAuthToken.value.trim()) {
+            setConnection("管理员未登录", "保存路由需要管理员登录。", "error", "需要登录");
+            return;
+          }
+          const payload = routeFormPayload();
+          if (!payload.id || !payload.provider || !payload.baseUrl) {
+            setConnection("路由参数不完整", "路由 ID、Provider 和 Base URL 必填。", "error", "缺少信息");
+            return;
+          }
+          if (routeFormMode.value === "create" && !payload.apiKey) {
+            setConnection("缺少 API Key", "新增路由必须输入 API Key，后端会加密保存。", "error", "缺少密钥");
+            return;
+          }
+          routeSaveBusy.value = true;
+          try {
+            const isEdit = routeFormMode.value === "edit";
+            const path = isEdit ? `/admin/ai-routes/${encodeURIComponent(payload.id)}` : "/admin/ai-routes";
+            const body = { ...payload };
+            if (isEdit) delete body.id;
+            const result = await fetchJson(path, {
+              method: isEdit ? "PATCH" : "POST",
+              headers: adminHeaders(),
+              body: JSON.stringify(body)
+            });
+            await Promise.allSettled([
+              loadAiRoutes({ quiet: true }),
+              loadAuditLogs({ quiet: true }),
+              loadHealth()
+            ]);
+            editAiRoute(normalizeAiRouteConfig(result.route || payload));
+            routeForm.value.apiKey = "";
+            setConnection(isEdit ? "路由已更新" : "路由已添加", `${payload.provider} 已写入路由池。`, "", "已保存");
+          } catch (error) {
+            setConnection("路由保存失败", explainFetchError(error), "error", "失败");
+          } finally {
+            routeSaveBusy.value = false;
+          }
+        };
+
+        const toggleAiRouteEnabled = async (route) => {
+          routePoolBusy.value = true;
+          try {
+            await fetchJson(`/admin/ai-routes/${encodeURIComponent(route.id)}`, {
+              method: "PATCH",
+              headers: adminHeaders(),
+              body: JSON.stringify({ enabled: !route.enabled })
+            });
+            await Promise.allSettled([loadAiRoutes({ quiet: true }), loadAuditLogs({ quiet: true }), loadHealth()]);
+            setConnection(route.enabled ? "路由已停用" : "路由已启用", `${route.provider} 状态已更新。`, "", "已执行");
+          } catch (error) {
+            setConnection("路由状态更新失败", explainFetchError(error), "error", "失败");
+          } finally {
+            routePoolBusy.value = false;
+          }
+        };
+
+        const moveAiRoute = async (route, direction) => {
+          const editable = [...aiRoutes.value].sort((a, b) => a.priority - b.priority || a.id.localeCompare(b.id));
+          const index = editable.findIndex((item) => item.id === route.id);
+          const nextIndex = index + direction;
+          if (index < 0 || nextIndex < 0 || nextIndex >= editable.length) return;
+          const copy = [...editable];
+          [copy[index], copy[nextIndex]] = [copy[nextIndex], copy[index]];
+          routePoolBusy.value = true;
+          try {
+            await fetchJson("/admin/ai-routes/reorder", {
+              method: "POST",
+              headers: adminHeaders(),
+              body: JSON.stringify({ routes: copy.map((item, itemIndex) => ({ id: item.id, priority: itemIndex + 1 })) })
+            });
+            await Promise.allSettled([loadAiRoutes({ quiet: true }), loadAuditLogs({ quiet: true }), loadHealth()]);
+            setConnection("路由优先级已更新", `${route.provider} 的优先级已调整。`, "", "已排序");
+          } catch (error) {
+            setConnection("路由排序失败", explainFetchError(error), "error", "失败");
+          } finally {
+            routePoolBusy.value = false;
+          }
+        };
+
+        const deleteAiRoute = async (route) => {
+          if (!confirm(`确认删除路由 ${route.provider} / ${route.id}？该操作会软删除配置并写入审计日志。`)) return;
+          routePoolBusy.value = true;
+          try {
+            await fetchJson(`/admin/ai-routes/${encodeURIComponent(route.id)}`, {
+              method: "DELETE",
+              headers: adminHeaders()
+            });
+            await Promise.allSettled([loadAiRoutes({ quiet: true }), loadAuditLogs({ quiet: true }), loadHealth()]);
+            if (routeForm.value.id === route.id) resetRouteForm();
+            setConnection("路由已删除", `${route.provider} 已从 D1 路由池移除。`, "", "已删除");
+          } catch (error) {
+            setConnection("路由删除失败", explainFetchError(error), "error", "失败");
+          } finally {
+            routePoolBusy.value = false;
+          }
+        };
+
+        const testAiRoute = async (route) => {
+          routeTestBusy.value = route.id;
+          try {
+            const result = await fetchJson(`/admin/ai-routes/${encodeURIComponent(route.id)}/test`, {
+              method: "POST",
+              headers: adminHeaders(),
+              body: JSON.stringify({ testPath: "/v1/models" })
+            });
+            routeTestResults.value = {
+              ...routeTestResults.value,
+              [route.id]: result.test || null
+            };
+            await loadAuditLogs({ quiet: true });
+            setConnection(result.test?.ok ? "路由测试通过" : "路由测试失败", result.test?.message || "已完成连通性测试。", result.test?.ok ? "" : "error", "测试结果");
+          } catch (error) {
+            setConnection("路由测试失败", explainFetchError(error), "error", "失败");
+          } finally {
+            routeTestBusy.value = "";
+          }
+        };
+
+        const loadAuditLogs = async ({ quiet = false } = {}) => {
+          if (!adminAuthToken.value.trim()) {
+            if (!quiet) setConnection("管理员未登录", "真实审计日志需要管理员登录。", "error", "需要登录");
+            return false;
+          }
+          try {
+            const result = await fetchJson("/admin/audit-logs?limit=50", { headers: adminHeaders() });
+            auditLogs.value = (result.logs || []).map(normalizeAuditLog);
+            if (!quiet) setConnection("真实审计日志已加载", `已读取 ${auditLogs.value.length} 条审计日志。`, "", "真实数据");
+            return true;
+          } catch (error) {
+            if (!quiet) setConnection("真实审计日志加载失败", explainFetchError(error), "error", "失败");
+            return false;
+          }
+        };
+
+        const setActiveSection = (sectionId) => {
+          activeSection.value = sectionId;
+          if (!adminAuthToken.value.trim()) return;
+          if (sectionId === "users" && !usersLoaded.value) loadUsers({ quiet: true });
+          if (sectionId === "requests" && !requestsLoaded.value) loadAiRequests({ quiet: true });
+          if (sectionId === "redeem" && !redeemBatches.value.length) loadRedeemCodes({ quiet: true });
+          if (sectionId === "routes" && !routePoolLoaded.value) loadAiRoutes({ quiet: true });
+          if (sectionId === "settings" && !auditLogs.value.length) loadAuditLogs({ quiet: true });
+        };
+
+        const loadAiRequest = async () => {
+          if (!adminAuthToken.value.trim()) {
+            setConnection("管理员未登录", "查询 AI 请求详情需要管理员登录。", "error", "需要登录");
+            return;
+          }
+          if (!requestLookupId.value) {
+            setConnection("缺少请求 ID", "现有接口只能按已知 `ai_request_logs.id` 查询单条请求。", "error", "需要 ID");
+            return;
+          }
+          requestBusy.value = true;
+          fetchedRequest.value = null;
+          try {
+            const result = await fetchJson(`/admin/ai-request?id=${encodeURIComponent(requestLookupId.value)}`, {
+              headers: adminHeaders()
+            });
+            fetchedRequest.value = result.request || null;
+            selectedRequestId.value = fetchedRequest.value?.id || "";
+            setConnection("AI 请求详情已加载", `已读取请求 ${selectedRequestId.value}。`, "", "真实数据");
+          } catch (error) {
+            setConnection("AI 请求详情加载失败", explainFetchError(error), "error", "失败");
+          } finally {
+            requestBusy.value = false;
+          }
+        };
+
+        onMounted(() => {
+          loadHealth();
+          restoreAdminSession();
+        });
+
+        return {
+          activeSection,
+          globalSearch,
+          userStatusFilter,
+          userSort,
+          requestStatusFilter,
+          routeFilter,
+          selectedUserId,
+          selectedRequestId,
+          requestLookupId,
+          environmentLabel,
+          workerUrl,
+          adminAuthMode,
+          adminAuthBusy,
+          adminAuthToken,
+          adminAuthUser,
+          adminAuthForm,
+          adminAuthenticated,
+          loading,
+          usersBusy,
+          usersLoaded,
+          userPagination,
+          requestsBusy,
+          requestsLoaded,
+          requestPagination,
+          requestSummary,
+          requestBusy,
+          routePoolBusy,
+          routePoolLoaded,
+          routeSaveBusy,
+          routeTestBusy,
+          routeRows,
+          routePoolSummary,
+          routePoolFallbackError,
+          routeTestResults,
+          routeFormMode,
+          routeForm,
+          adminDialog,
+          adminDialogUser,
+          adminActionBusy,
+          adminActionReason,
+          creditAdjustForm,
+          connectionTitle,
+          connectionMessage,
+          connectionTone,
+          connectionTag,
+          navItems,
+          currentSection,
+          metrics,
+          activityBars,
+          trendPoints,
+          trendLinePath,
+          trendAreaPath,
+          trendGridLines,
+          healthItems,
+          filteredUsers,
+          selectedUser,
+          statusActionLabel,
+          selectedCreditLedger,
+          selectedCashLedgerStatus,
+          requestRows,
+          filteredRequests,
+          selectedRequest,
+          redeemBatches,
+          redeemBusy,
+          redeemExpandedGroups,
+          redeemForm,
+          generatedCodes,
+          redeemStatusColumns,
+          securityChecks,
+          auditLogs,
+          requiredEndpoints,
+          formatMoney,
+          formatOptionalMoney,
+          formatCreditValue,
+          formatPercent,
+          formatLatency,
+          isRedeemGroupExpanded,
+          toggleRedeemGroup,
+          statusClass,
+          setAdminAuthMode,
+          submitAdminAuth,
+          logoutAdmin,
+          setActiveSection,
+          selectUser,
+          openCreditAdjustDialog,
+          openUserStatusDialog,
+          closeAdminDialog,
+          submitAdminDialog,
+          dismissConnection,
+          loadHealth,
+          loadRealData,
+          loadUsers,
+          loadAiRequests,
+          loadRedeemCodes,
+          loadAiRoutes,
+          resetRouteForm,
+          editAiRoute,
+          saveAiRoute,
+          toggleAiRouteEnabled,
+          moveAiRoute,
+          deleteAiRoute,
+          testAiRoute,
+          resetRedeemForm,
+          createRedeemCodes,
+          loadAuditLogs,
+          loadAiRequest
+        };
+      }
+    }).mount("#adminApp");
+  </script>
+</body>
+</html>
