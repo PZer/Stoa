@@ -89,6 +89,14 @@
                 "@type": "Answer",
                 "text": "生成失败或上游服务失败时，系统会按实际扣除自动返还对应积分。刷新页面、关闭浏览器、重新打开页面等用户侧中断导致任务取消或结果丢失时，暂不返还积分。"
               }
+            },
+            {
+              "@type": "Question",
+              "name": "如何联系及售后？",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "联系及售后请加入 QQ 群：1091448605。进群后可查看群公告并反馈充值、积分、生成异常等问题。"
+              }
             }
           ]
         }
@@ -2851,6 +2859,11 @@
       max-height: min(78vh, 720px);
     }
 
+    .announcement-card {
+      width: min(520px, calc(100vw - 36px));
+      max-height: min(78vh, 640px);
+    }
+
     .ambiguity-card {
       width: min(520px, calc(100vw - 36px));
       max-height: min(72vh, 620px);
@@ -2901,6 +2914,57 @@
       padding: 14px 18px 18px;
       display: grid;
       gap: 11px;
+    }
+
+    .announcement-body {
+      overflow: auto;
+      padding: 18px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .announcement-highlight {
+      margin: 0;
+      color: rgba(244, 248, 255, 0.9);
+      font-size: 15px;
+      font-weight: 760;
+      line-height: 1.7;
+    }
+
+    .announcement-qq {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 16px;
+      padding: 13px 14px;
+      background: rgba(255, 255, 255, 0.07);
+    }
+
+    .announcement-qq span {
+      color: rgba(226, 236, 248, 0.74);
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .announcement-qq strong {
+      color: #9ff4ff;
+      font-size: 22px;
+      font-weight: 900;
+      line-height: 1;
+    }
+
+    .announcement-note {
+      margin: 0;
+      color: rgba(226, 236, 248, 0.72);
+      font-size: 12.5px;
+      line-height: 1.6;
+    }
+
+    .announcement-actions .auth-submit {
+      width: auto;
+      padding: 0 22px;
     }
 
     .ambiguity-body {
@@ -3007,6 +3071,10 @@
         max-height: min(78dvh, calc(100dvh - 64px));
       }
 
+      .announcement-card {
+        max-height: min(78dvh, calc(100dvh - 64px));
+      }
+
       .terms-head,
       .terms-actions {
         padding: 13px 14px;
@@ -3024,6 +3092,25 @@
       .terms-body {
         gap: 10px;
         padding: 12px;
+      }
+
+      .announcement-body {
+        gap: 12px;
+        padding: 14px;
+      }
+
+      .announcement-highlight {
+        font-size: 14px;
+      }
+
+      .announcement-qq {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .announcement-qq strong {
+        font-size: 20px;
       }
 
       .terms-item {
@@ -3871,6 +3958,7 @@
     .auth-field,
     .auth-terms-card,
     .ambiguity-default-rule,
+    .announcement-note,
     .terms-item,
     .auth-balance,
     .task-row-card,
@@ -3881,6 +3969,7 @@
     .auth-balance,
     .auth-terms-card,
     .ambiguity-default-rule,
+    .announcement-qq,
     .terms-item,
     .task-row-card,
     .prompt-preview-meta {
@@ -3889,9 +3978,15 @@
     }
 
     .auth-balance strong,
+    .announcement-highlight,
+    .announcement-qq strong,
     .prompt-preview-meta span:nth-child(even),
     .prompt-preview-meta span:first-child {
       color: #333333;
+    }
+
+    .announcement-qq span {
+      color: #8e8e93;
     }
 
     .prompt-preview-meta span:nth-child(odd) {
@@ -4216,6 +4311,29 @@
       <button class="action-btn gallery-entry" type="button" title="本地图库" aria-label="本地图库" @click="openTopPanel('gallery')">
         图库
       </button>
+    </div>
+
+    <div v-if="announcementOpen" class="terms-mask announcement-mask" @click.self="closeAnnouncement">
+      <section class="terms-card announcement-card" role="dialog" aria-modal="true" aria-labelledby="announcementTitle">
+        <header class="terms-head">
+          <div>
+            <h3 id="announcementTitle">{{ announcementNotice.title }}</h3>
+            <p>{{ announcementNotice.subtitle }}</p>
+          </div>
+          <button class="mini-btn panel-close terms-close" type="button" @click="closeAnnouncement">关闭</button>
+        </header>
+        <div class="announcement-body">
+          <p class="announcement-highlight">{{ announcementNotice.message }}</p>
+          <div class="announcement-qq">
+            <span>QQ群</span>
+            <strong>{{ announcementNotice.qqGroup }}</strong>
+          </div>
+          <p class="announcement-note">{{ announcementNotice.note }}</p>
+        </div>
+        <footer class="terms-actions announcement-actions">
+          <button class="auth-submit" type="button" @click="closeAnnouncement">我知道了</button>
+        </footer>
+      </section>
     </div>
 
     <section v-if="activePanel === 'tasks'" class="workspace-panel task-panel">
@@ -4548,6 +4666,8 @@
           const SINGLE_IMAGE_INSTRUCTION = "生成一张图。";
           const WORKER_API_BASE = "https://draw.lalakunaozi.fun";
           const AUTH_STORAGE_KEY = "photo_react_auth_v1";
+          const ANNOUNCEMENT_STORAGE_KEY = "photo_react_announcement_dismissed_v1";
+          const ANNOUNCEMENT_NOTICE_ID = "site-launch-bonus-20260506";
           const PROMPT_GALLERY_JSON_URL = "./prompt-gallery/gallery_prompts.json";
           const TEXT_IMAGE_CREDIT_COST = 1;
           const REFERENCE_IMAGE_CREDIT_COST = 2;
@@ -4671,6 +4791,13 @@
             "保持原图比例不变",
             "保持原比例不变"
           ]);
+          const ANNOUNCEMENT_NOTICE = Object.freeze({
+            title: "首次上线公告",
+            subtitle: "最新内容",
+            message: "为庆祝本站首次上线，特赠予所有已注册用户29积分额度，领取方式请加QQ群并阅读群公告：1091448605。",
+            qqGroup: "1091448605",
+            note: "关闭后本公告将不再自动显示。"
+          });
           const TERMS_NOTICE_ITEMS = Object.freeze([
             {
               question: "Q1：我生成的图片会保存在网站服务器上吗？如果丢失了怎么办？",
@@ -4720,6 +4847,12 @@
               answerLines: [
                 "A7：您使用本站生成的图片所产生的所有用途及相关后果，均由您个人全权负责，与本站无关。请合法合规地使用AI生成的图片内容。"
               ]
+            },
+            {
+              question: "Q8：如何联系及售后？",
+              answerLines: [
+                "A8：联系及售后请加入 QQ 群：1091448605。进群后可查看群公告，并反馈充值、积分、生成异常等问题。"
+              ]
             }
           ]);
           const containsAnyKeyword = (text, keywords) => {
@@ -4742,6 +4875,7 @@
           const authPanelMode = ref("login");
           const authBusy = ref(false);
           const authTermsAccepted = ref(false);
+          const announcementOpen = ref(false);
           const termsNoticeOpen = ref(false);
           const termsNoticeMode = ref("review");
           const redeemBusy = ref(false);
@@ -5051,6 +5185,27 @@
             authForm.confirmPassword = "";
             authTermsAccepted.value = false;
             authError.value = "";
+          };
+
+          const shouldShowAnnouncement = () => {
+            try {
+              return localStorage.getItem(ANNOUNCEMENT_STORAGE_KEY) !== ANNOUNCEMENT_NOTICE_ID;
+            } catch (error) {
+              return true;
+            }
+          };
+
+          const openLatestAnnouncement = () => {
+            if (shouldShowAnnouncement()) announcementOpen.value = true;
+          };
+
+          const closeAnnouncement = () => {
+            announcementOpen.value = false;
+            try {
+              localStorage.setItem(ANNOUNCEMENT_STORAGE_KEY, ANNOUNCEMENT_NOTICE_ID);
+            } catch (error) {
+              // Ignore storage failures; the modal can still be dismissed for this session.
+            }
           };
 
           const openTermsNotice = (mode = "review") => {
@@ -7590,6 +7745,7 @@
           );
 
           onMounted(() => {
+            openLatestAnnouncement();
             restoreAuthSession();
             loadLocalWorkspace();
             loadPromptGallery();
@@ -7632,6 +7788,9 @@
             authBusy,
             authError,
             authTermsAccepted,
+            announcementOpen,
+            announcementNotice: ANNOUNCEMENT_NOTICE,
+            closeAnnouncement,
             termsNoticeOpen,
             termsNoticeRequiresConsent,
             termsNoticeSubtitle,
