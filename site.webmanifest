@@ -1,0 +1,24 @@
+{
+  "name": "LOAT AI生图",
+  "short_name": "LOAT",
+  "description": "中文在线 AI 生图工具，支持文生图、参考图重绘和提示词灵感图库。",
+  "lang": "zh-CN",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#08111f",
+  "theme_color": "#08111f",
+  "icons": [
+    {
+      "src": "/assets/favicon.png",
+      "sizes": "128x128",
+      "type": "image/png"
+    },
+    {
+      "src": "/assets/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

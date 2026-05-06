@@ -1,0 +1,41 @@
+User-agent: Googlebot
+User-agent: Bingbot
+User-agent: Baiduspider
+User-agent: Sogou web spider
+User-agent: 360Spider
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /admin.html
+Disallow: /admin/
+Disallow: /auth/
+Disallow: /credits
+Disallow: /redeem
+Disallow: /ai/
+Disallow: /upload
+Disallow: /delete
+Disallow: /tmp/
+
+User-agent: GPTBot
+User-agent: Google-Extended
+User-agent: CCBot
+User-agent: ClaudeBot
+User-agent: anthropic-ai
+User-agent: Bytespider
+User-agent: ByteSpider
+User-agent: Doubaobot
+User-agent: DeepSeekBot
+Disallow: /
+
+User-agent: *
+Allow: /
+Disallow: /admin.html
+Disallow: /admin/
+Disallow: /auth/
+Disallow: /credits
+Disallow: /redeem
+Disallow: /ai/
+Disallow: /upload
+Disallow: /delete
+Disallow: /tmp/
+
+Sitemap: https://stoa.lalakunaozi.fun/sitemap.xml

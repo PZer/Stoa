@@ -3,10 +3,97 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LOAT——你的AI创意助手</title>
-  <link rel="icon" href="./assets/logo.png" type="image/png">
+  <title>LOAT AI - 在线AI图片生成</title>
+  <meta name="description" content="LOAT 是一个中文在线 AI 生图工具，支持文生图、参考图重绘、多图参考、比例选择和提示词灵感图库。用户可以输入中文提示词或上传参考图生成图片。">
+  <meta name="keywords" content="AI生图,AI图片生成器,在线AI生图,文生图,图生图,参考图重绘,AI提示词,LOAT">
+  <meta name="robots" content="index,follow,max-image-preview:large">
+  <meta name="theme-color" content="#08111f">
+  <link rel="canonical" href="https://stoa.lalakunaozi.fun/">
+  <link rel="manifest" href="./site.webmanifest">
+  <link rel="icon" href="./assets/favicon.png" type="image/png">
   <link rel="apple-touch-icon" href="./assets/logo.png">
+  <link rel="preconnect" href="https://draw.lalakunaozi.fun">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="LOAT">
+  <meta property="og:title" content="LOAT AI生图 - 在线AI图片生成与参考图重绘">
+  <meta property="og:description" content="用中文提示词或参考图生成图片，浏览 AI 生图提示词案例，并将灵感直接带回 LOAT 创作。">
+  <meta property="og:url" content="https://stoa.lalakunaozi.fun/">
+  <meta property="og:image" content="https://stoa.lalakunaozi.fun/assets/logo.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="LOAT AI生图 - 在线AI图片生成与参考图重绘">
+  <meta name="twitter:description" content="中文 AI 生图工具，支持文生图、图生图、参考图重绘和提示词灵感图库。">
+  <meta name="twitter:image" content="https://stoa.lalakunaozi.fun/assets/logo.png">
   <script src="./vendor/vue.global.prod.js"></script>
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://stoa.lalakunaozi.fun/#organization",
+          "name": "LOAT",
+          "legalName": "STOA团队",
+          "url": "https://stoa.lalakunaozi.fun/",
+          "logo": "https://stoa.lalakunaozi.fun/assets/logo.png"
+        },
+        {
+          "@type": "WebApplication",
+          "@id": "https://stoa.lalakunaozi.fun/#webapp",
+          "name": "LOAT AI生图",
+          "url": "https://stoa.lalakunaozi.fun/",
+          "applicationCategory": "MultimediaApplication",
+          "operatingSystem": "Web",
+          "inLanguage": "zh-CN",
+          "description": "LOAT 是一个中文在线 AI 生图工具，支持文生图、参考图重绘、多图参考、比例选择和提示词灵感图库。",
+          "creator": { "@id": "https://stoa.lalakunaozi.fun/#organization" },
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "CNY",
+            "description": "注册和访问工具页面不收取固定费用，图片生成按站内积分规则消耗。"
+          }
+        },
+        {
+          "@type": "FAQPage",
+          "@id": "https://stoa.lalakunaozi.fun/#faq",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "LOAT 支持哪些 AI 生图方式？",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "LOAT 支持文生图、上传参考图生成图片、多图参考、参考图重绘和比例选择。"
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "LOAT 适合哪些用户？",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "LOAT 适合需要快速生成头像、海报、封面、电商图、角色图和创意视觉草稿的中文用户。"
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "生成结果保存在哪里？",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "当前主应用会将生成结果保存在用户本地设备的浏览器存储中，本地图库默认按 7 天保留逻辑管理。参考图处理会使用 tmp 临时上传链路，服务端按 24 小时临时有效期处理，并会在任务完成后尽量发起清理。"
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "生成失败会返还积分吗？",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "生成失败或上游服务失败时，系统会按实际扣除自动返还对应积分。刷新页面、关闭浏览器、重新打开页面等用户侧中断导致任务取消或结果丢失时，暂不返还积分。"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  </script>
   <style>
     :root {
       --text: #f4f8ff;
@@ -2566,6 +2653,10 @@
       transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
     }
 
+    .user-actions a.user-btn {
+      text-decoration: none;
+    }
+
     .user-btn:hover {
       transform: translateY(-1px);
       border-color: rgba(255, 255, 255, 0.34);
@@ -4102,6 +4193,7 @@
       </span>
       <button class="user-pill user-btn" type="button" @click="openAuthPanel('redeem')">兑换码</button>
       <button class="user-pill user-btn" type="button" @click="openRedeemPurchase">充值</button>
+      <a class="user-pill user-btn" href="./ai-shengtu.html">生图指南</a>
       <button v-if="!isLoggedIn" class="user-pill user-btn login-register-btn" type="button" @click="openAuthPanel('login')">登录/注册</button>
       <button v-if="isLoggedIn" class="user-pill user-btn" type="button" @click="logoutUser">退出</button>
       <span v-if="isLoggedIn" class="mobile-user-status-actions" aria-label="当前账号状态">
@@ -4617,7 +4709,9 @@
                 "A6：本站的具体计费规则如下：",
                 "文生图（纯文本生成图片）：每次请求消耗 1 积分。",
                 "图生图（上传图片生成图片）：每次请求消耗 2 积分。",
-                "积分价值：1 积分折合人民币 0.1 元（1毛钱）。"
+                "积分价值：1 积分折合人民币 0.1 元（1毛钱）。",
+                "生成失败或上游服务失败时，系统会按实际扣除自动返还对应积分。",
+                "刷新页面、关闭浏览器、重新打开页面等用户侧中断导致任务取消或结果丢失时，暂不返还积分。"
               ]
             },
             {
