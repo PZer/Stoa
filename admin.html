@@ -2042,6 +2042,7 @@
                   <span>编辑：{{ route.imageEditPath || "自动推断" }}</span>
                   <span>Multipart：{{ route.imageMultipartMode || "默认" }}</span>
                   <span>图生图：{{ route.imageEditStrategy || "generations-only" }}</span>
+                  <span>HTTP 代理：{{ route.httpProxyEnabled ? "开启" : "直连" }}</span>
                 </div>
                 <div v-if="route.stats?.lastError" class="route-test-result">
                   最近错误：{{ route.stats.lastError }}
@@ -2049,6 +2050,7 @@
                 <div v-if="routeTestResults[route.id]" class="route-test-result">
                   测试结果：{{ routeTestResults[route.id].ok ? "通过" : "失败" }} ·
                   {{ routeTestResults[route.id].status || "无状态码" }} ·
+                  {{ routeTestResults[route.id].networkTransport || (routeTestResults[route.id].httpProxyEnabled ? "http-proxy" : "direct") }} ·
                   {{ formatLatency(routeTestResults[route.id].durationMs) }} ·
                   {{ routeTestResults[route.id].message }}
                 </div>
@@ -2142,6 +2144,10 @@
               <label class="field">
                 <span>备注</span>
                 <input v-model.trim="routeForm.note" type="text" maxlength="300" placeholder="用途 / 额度 / 代理说明">
+              </label>
+              <label class="check-row">
+                <input v-model="routeForm.httpProxyEnabled" type="checkbox">
+                <span>使用全局 HTTP 代理</span>
               </label>
               <label class="check-row">
                 <input v-model="routeForm.enabled" type="checkbox">
@@ -2413,6 +2419,7 @@
           imageEditStrategy: "generations-only",
           imageMultipartMode: "",
           priority: 1,
+          httpProxyEnabled: true,
           enabled: true,
           note: ""
         });
@@ -2720,6 +2727,7 @@
           imageEditStrategy: route.imageEditStrategy || route.image_edit_strategy || "generations-only",
           imageMultipartMode: route.imageMultipartMode || route.image_multipart_mode || "",
           priority: Number(route.priority || 0),
+          httpProxyEnabled: route.httpProxyEnabled !== false && route.http_proxy_enabled !== false && route.http_proxy_enabled !== 0,
           enabled: route.enabled !== false,
           note: route.note || "",
           source: route.source || "d1",
@@ -3331,6 +3339,7 @@
             imageEditStrategy: "generations-only",
             imageMultipartMode: "",
             priority: Math.max(1, aiRoutes.value.length + 1),
+            httpProxyEnabled: true,
             enabled: true,
             note: ""
           };
@@ -3377,6 +3386,7 @@
             imageEditStrategy: route.imageEditStrategy || "generations-only",
             imageMultipartMode: route.imageMultipartMode || "",
             priority: route.priority || 1,
+            httpProxyEnabled: route.httpProxyEnabled !== false,
             enabled: route.enabled,
             note: route.note || ""
           };
@@ -3394,6 +3404,7 @@
             imageEditStrategy: form.imageEditStrategy || "generations-only",
             imageMultipartMode: form.imageMultipartMode || "",
             priority: Math.trunc(Number(form.priority || 1)),
+            httpProxyEnabled: Boolean(form.httpProxyEnabled),
             enabled: Boolean(form.enabled),
             note: form.note.trim()
           };
