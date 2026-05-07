@@ -1998,7 +1998,7 @@
             <strong>{{ routePoolSummary.enabled }}</strong>
           </div>
           <div class="route-stat">
-            <span>环境回退</span>
+            <span>环境待迁移</span>
             <strong>{{ routePoolSummary.fallbackCount }}</strong>
           </div>
           <div class="route-stat">
@@ -2012,7 +2012,7 @@
             <header class="panel-head">
               <div>
                 <h2>路由池</h2>
-                <p>D1 路由优先，未配置时回退 AI_ROUTES_JSON / legacy 环境变量。</p>
+                <p>D1 路由表按优先级调度；环境变量路由首次加载时迁移为可编辑路由。</p>
               </div>
               <button class="ghost-btn" type="button" @click="loadAiRoutes">{{ routePoolBusy ? "加载中..." : "刷新路由" }}</button>
             </header>
@@ -2041,6 +2041,7 @@
                   <span>生成：{{ route.imageGeneratePath || "/v1/images/generations" }}</span>
                   <span>编辑：{{ route.imageEditPath || "自动推断" }}</span>
                   <span>Multipart：{{ route.imageMultipartMode || "默认" }}</span>
+                  <span>图生图：{{ route.imageEditStrategy || "generations-only" }}</span>
                 </div>
                 <div v-if="route.stats?.lastError" class="route-test-result">
                   最近错误：{{ route.stats.lastError }}
@@ -2085,7 +2086,7 @@
             <form class="panel-body auth-form" @submit.prevent="saveAiRoute">
               <label class="field">
                 <span>路由 ID</span>
-                <input v-model.trim="routeForm.id" type="text" :disabled="routeFormMode === 'edit'" placeholder="primary-de5">
+                <input v-model.trim="routeForm.id" type="text" placeholder="primary-de5">
               </label>
               <label class="field">
                 <span>Provider</span>
@@ -2114,6 +2115,15 @@
               <label class="field">
                 <span>编辑路径</span>
                 <input v-model.trim="routeForm.imageEditPath" type="text" placeholder="留空自动推断">
+              </label>
+              <label class="field">
+                <span>图生图策略</span>
+                <select v-model="routeForm.imageEditStrategy">
+                  <option value="generations-only">仅生成接口</option>
+                  <option value="edits-first">优先编辑接口</option>
+                  <option value="edits-fallback">生成失败后回退编辑接口</option>
+                  <option value="auto">自动</option>
+                </select>
               </label>
               <label class="field">
                 <span>Multipart 模式</span>
@@ -2163,8 +2173,7 @@
                 <span>路由</span>
                 <select v-model="routeFilter">
                   <option value="all">全部路由</option>
-                  <option value="primary-de5">primary-de5</option>
-                  <option value="legacy">legacy</option>
+                  <option v-for="routeId in routeFilterOptions" :key="routeId" :value="routeId">{{ routeId }}</option>
                 </select>
               </label>
             </div>
@@ -2393,6 +2402,7 @@
         const routeTestResults = ref({});
         const routeFormMode = ref("create");
         const routeForm = ref({
+          originalId: "",
           id: "",
           provider: "",
           baseUrl: "",
@@ -2400,6 +2410,7 @@
           model: "",
           imageGeneratePath: "/v1/images/generations",
           imageEditPath: "",
+          imageEditStrategy: "generations-only",
           imageMultipartMode: "",
           priority: 1,
           enabled: true,
@@ -2593,6 +2604,13 @@
             .filter((row) => !text || [row.id, row.user, row.mode, row.status, row.route, row.prompt].some((value) => String(value).toLowerCase().includes(text)));
         });
 
+        const routeFilterOptions = computed(() => {
+          const ids = new Set();
+          for (const route of routeRows.value) if (route.id) ids.add(route.id);
+          for (const row of requestRows.value) if (row.route && row.route !== "--") ids.add(row.route);
+          return [...ids].sort((a, b) => a.localeCompare(b));
+        });
+
         const redeemStatusColumns = computed(() => {
           const configs = [
             { id: "available", title: "可用兑换码", desc: "未过期、未禁用且仍有剩余次数。" },
@@ -2699,6 +2717,7 @@
           model: route.model || "",
           imageGeneratePath: route.imageGeneratePath || route.image_generate_path || "",
           imageEditPath: route.imageEditPath || route.image_edit_path || "",
+          imageEditStrategy: route.imageEditStrategy || route.image_edit_strategy || "generations-only",
           imageMultipartMode: route.imageMultipartMode || route.image_multipart_mode || "",
           priority: Number(route.priority || 0),
           enabled: route.enabled !== false,
@@ -3301,6 +3320,7 @@
         const resetRouteForm = () => {
           routeFormMode.value = "create";
           routeForm.value = {
+            originalId: "",
             id: "",
             provider: "",
             baseUrl: "",
@@ -3308,6 +3328,7 @@
             model: "",
             imageGeneratePath: "/v1/images/generations",
             imageEditPath: "",
+            imageEditStrategy: "generations-only",
             imageMultipartMode: "",
             priority: Math.max(1, aiRoutes.value.length + 1),
             enabled: true,
@@ -3332,7 +3353,7 @@
             routePoolFallbackError.value = result.fallbackError || "";
             routePoolLoaded.value = true;
             if (routeFormMode.value === "create" && !routeForm.value.id) resetRouteForm();
-            if (!quiet) setConnection("路由池已加载", `已读取 ${aiRoutes.value.length} 条 D1 路由，${fallbackAiRoutes.value.length} 条环境回退路由。`, "", "真实数据");
+            if (!quiet) setConnection("路由池已加载", `已读取 ${aiRoutes.value.length} 条 D1 路由。环境变量路由会在首次加载时迁移到 D1。`, "", "真实数据");
             return true;
           } catch (error) {
             if (!quiet) setConnection("路由池加载失败", explainFetchError(error), "error", "失败");
@@ -3345,6 +3366,7 @@
         const editAiRoute = (route) => {
           routeFormMode.value = "edit";
           routeForm.value = {
+            originalId: route.id,
             id: route.id,
             provider: route.provider,
             baseUrl: route.baseUrl,
@@ -3352,6 +3374,7 @@
             model: route.model || "",
             imageGeneratePath: route.imageGeneratePath || "/v1/images/generations",
             imageEditPath: route.imageEditPath || "",
+            imageEditStrategy: route.imageEditStrategy || "generations-only",
             imageMultipartMode: route.imageMultipartMode || "",
             priority: route.priority || 1,
             enabled: route.enabled,
@@ -3368,6 +3391,7 @@
             model: form.model || "",
             imageGeneratePath: form.imageGeneratePath.trim() || "/v1/images/generations",
             imageEditPath: form.imageEditPath.trim(),
+            imageEditStrategy: form.imageEditStrategy || "generations-only",
             imageMultipartMode: form.imageMultipartMode || "",
             priority: Math.trunc(Number(form.priority || 1)),
             enabled: Boolean(form.enabled),
@@ -3394,9 +3418,13 @@
           routeSaveBusy.value = true;
           try {
             const isEdit = routeFormMode.value === "edit";
-            const path = isEdit ? `/admin/ai-routes/${encodeURIComponent(payload.id)}` : "/admin/ai-routes";
+            const currentId = routeForm.value.originalId || payload.id;
+            const path = isEdit ? `/admin/ai-routes/${encodeURIComponent(currentId)}` : "/admin/ai-routes";
             const body = { ...payload };
-            if (isEdit) delete body.id;
+            if (isEdit) {
+              body.newId = payload.id;
+              delete body.id;
+            }
             const result = await fetchJson(path, {
               method: isEdit ? "PATCH" : "POST",
               headers: adminHeaders(),
@@ -3409,6 +3437,11 @@
             ]);
             editAiRoute(normalizeAiRouteConfig(result.route || payload));
             routeForm.value.apiKey = "";
+            if (isEdit && currentId !== payload.id) {
+              const { [currentId]: _oldTestResult, ...remainingResults } = routeTestResults.value;
+              routeTestResults.value = remainingResults;
+              if (routeFilter.value === currentId) routeFilter.value = payload.id;
+            }
             setConnection(isEdit ? "路由已更新" : "路由已添加", `${payload.provider} 已写入路由池。`, "", "已保存");
           } catch (error) {
             setConnection("路由保存失败", explainFetchError(error), "error", "失败");
@@ -3614,6 +3647,7 @@
           selectedCashLedgerStatus,
           requestRows,
           filteredRequests,
+          routeFilterOptions,
           selectedRequest,
           redeemBatches,
           redeemBusy,
